@@ -10,12 +10,12 @@
 // ======================================================================
 
 #define square(x) ((x)*(x))
-//// helper for VBOs
-//#define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 // needed by Windows
 // allows us to use std::min & std::max
-#define NOMINMAX
+#ifndef NOMINMAX
+  #define NOMINMAX
+#endif
 
 
 // =========================================================================

@@ -1,5 +1,12 @@
-cmake_minimum_required (VERSION 3.1.1)
-project (hw3)
+cmake_minimum_required(VERSION 3.1.1)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+
+
+project(hw3)
 
 ##########################################################################
 # EXECUTABLE NAME
@@ -7,7 +14,7 @@ set(my_executable render)
 
 
 
-if (${APPLE})
+if(${APPLE})
 
   ##########################################################################
   # MAC OSX / METAL SPECIFIC INSTRUCTIONS
@@ -29,9 +36,9 @@ if (${APPLE})
   
   # build storyboard
   find_program(ibtool ibtool)
-  if (NOT ibtool)
+  if(NOT ibtool)
     message(FATAL_ERROR "Missing ibtool")
-  endif ()
+  endif()
   add_custom_target(storyboard_target DEPENDS ${storyboard_info})
   add_custom_command(OUTPUT ${storyboard_info} DEPENDS ${my_storyboard}
     COMMAND ${ibtool} ARGS --compilation-directory ${storyboard_output_dir} ${my_storyboard} VERBATIM)
@@ -44,9 +51,9 @@ if (${APPLE})
   
   # building shader/airfile
   find_program(metal metal HINTS ${clang_dir})
-  if (NOT metal)
+  if(NOT metal)
     message(FATAL_ERROR "Missing metal")
-  endif ()
+  endif()
   add_custom_target(air_target DEPENDS ${air_file})
   # The ibtool will create the Resources directory; ${metal} will not, so we generate
   # storyboard_target first.
@@ -55,9 +62,9 @@ if (${APPLE})
   
   # building metal library
   find_program(metallib metallib HINTS ${clang_dir})
-  if (NOT metallib)
+  if(NOT metallib)
     message(FATAL_ERROR "Missing metallib")
-  endif ()
+  endif()
   add_custom_target(metal_target DEPENDS ${metal_file})
   add_custom_command(OUTPUT ${metal_file} DEPENDS ${air_file}
     COMMAND ${metallib} ARGS -o ${metal_file} ${air_file} VERBATIM)
@@ -78,15 +85,15 @@ else()
   # Following the instructions for Windows here:
   # http://www.cs.rpi.edu/~cutler/classes/advancedgraphics/S19/opengl_install_notes.php
   # the graphics librarys files are placed in this directory
-  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:\\GraphicsLibraries")
+  set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "C:/GraphicsLibraries")
 
-endif ()
+endif()
 
 
 ##########################################################################
 # SOURCE FILES
 
-if (${APPLE})
+if(${APPLE})
   message ("MAC OS X")
   set (OS_SPECIFIC_FILES
     ${PROJECT_SOURCE_DIR}/MetalViewController.m
@@ -102,7 +109,7 @@ else()
     ${PROJECT_SOURCE_DIR}/OpenGLCanvas.cpp
     ${PROJECT_SOURCE_DIR}/OpenGLRenderer.cpp
     )
-endif ()
+endif()
 
 set (SRCS
   ${PROJECT_SOURCE_DIR}/argparser.h
@@ -152,16 +159,13 @@ set (SRCS
   )
 
 # all the .cpp files that make up this project
-add_executable(${my_executable}
-  MACOSX_BUNDLE
-  ${SRCS}
-  )
+add_executable(${my_executable} MACOSX_BUNDLE ${SRCS})
 
 
 ##########################################################################
 # LIBRARIES AND HEADERS
 
-if (${APPLE})
+if(${APPLE})
 
   # nothing here
 
@@ -171,29 +175,28 @@ else()
   find_package(OpenGL REQUIRED)
   if(OPENGL_FOUND)
     include_directories(${OPENGL_INCLUDE_DIRS})
-    target_link_libraries(${my_executable} ${OPENGL_LIBRARIES} )
+    target_link_libraries(${my_executable} PRIVATE ${OPENGL_LIBRARIES} )
   endif(OPENGL_FOUND)
   find_package(GLEW REQUIRED)
   if(GLEW_FOUND)
     include_directories(${GLEW_INCLUDE_DIRS})
-    target_link_libraries(${my_executable} ${GLEW_LIBRARIES})
+    target_link_libraries(${my_executable} PRIVATE ${GLEW_LIBRARIES})
   endif(GLEW_FOUND)
   find_package(GLM REQUIRED)
   if(GLM_FOUND)
-    include_directories(${GLM_INCLUDE_DIRS})
+    target_include_directories(${my_executable} PRIVATE ${GLM_INCLUDE_DIRS})
   endif()
   # find all the dependencies of GLFW
   set(ENV{PKG_CONFIG_PATH} /usr/local/lib/pkgconfig:/usr/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
   find_package(PkgConfig)
   if(PKG_CONFIG_FOUND)
     pkg_search_module(GLFW REQUIRED glfw3)
-    include_directories(${GLFW_INCLUDE_DIRS})
+    target_include_directories(${my_executable} PRIVATE ${GLFW_INCLUDE_DIRS})
   else(PKG_CONFIG_FOUND)
     message("Did not find pkg-config, trying FindGLFW.cmake")
-    find_package(GLFW REQUIRED)
+    find_package(GLFW REQUIRED COMPONENTS glfw3)
     if(GLFW_FOUND)
-      include_directories(${GLFW_INCLUDE_DIR})
-    else(GLFW_FOUND)
+      target_include_directories(${my_executable} PRIVATE ${GLFW_INCLUDE_DIR})
     endif(GLFW_FOUND)
   endif(PKG_CONFIG_FOUND)
   message(STATUS "OPENGL_LIBRARIES: ${OPENGL_LIBRARIES}")
@@ -204,12 +207,12 @@ else()
   message(STATUS "GLFW_STATIC_LDFLAGS: ${GLFW_STATIC_LDFLAGS}")
 
   # some linux compilations require this hack to get the libraries in the right order
-  if (UNIX)
+  if(UNIX)
     set(MISSING_FLAGS "-lX11 -lXxf86vm -lXrandr -lpthread -lXi -lXinerama -lXcursor -lrt -ldl")
-    target_link_libraries(${my_executable} "${OPENGL_gl_LIBRARY}" "${GLEW_LIBRARIES}"  "${GLFW_LIBRARIES}" "${MISSING_FLAGS}")
+    target_link_libraries(${my_executable} PRIVATE "${OPENGL_gl_LIBRARY}" "${GLEW_LIBRARIES}"  "${GLFW_LIBRARIES}" "${MISSING_FLAGS}")
   endif()
 
-  target_link_libraries(${my_executable} "${OPENGL_gl_LIBRARY}" "${GLEW_LIBRARIES}" "${GLFW_LIBRARIES}")
+  target_link_libraries(${my_executable} PRIVATE "${OPENGL_gl_LIBRARY}" "${GLEW_LIBRARIES}" "${GLFW_LIBRARIES}")
   ## this will hopefully work whether you have the static or the dynamic GLFW libraries
   # string replace hack to fix a bug in the pkg_config information
   string(REPLACE ";" " " flags_static "${GLFW_STATIC_LDFLAGS}")
@@ -217,24 +220,25 @@ else()
   set_property(TARGET ${my_executable} APPEND_STRING PROPERTY LINK_FLAGS "${flags_static} ${flags_dynamic}")
 
 endif()
-  
+
 ##########################################################################
 # COMPILATION FLAGS
-if (APPLE)
 
-  set(MY_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -Wextra")
+if(MSVC)
+  target_compile_options(${my_executable} PRIVATE /W4 /WX)
+else()
+  target_compile_options(${my_executable} PRIVATE -Wall -Wextra -Wpedantic)
+endif()
 
+if(UNIX)
+  target_compile_options(${my_executable} PRIVATE ${BUILD_32})
+endif()
+
+if(APPLE)
   # src specific compilation flags (to mix c++ and objective c)
   # http://ysflight.in.coocan.jp/programming/cmake/e.html
   foreach(SRC ${SRCS})
-    if(${SRC} MATCHES .cpp$)
-      # cpp files
-      set_source_files_properties(
-        ${SRC} 
-        PROPERTIES 
-        COMPILE_FLAGS 
-        "${MY_CMAKE_CXX_FLAGS}")
-    elseif(${SRC} MATCHES m$)
+    if(${SRC} MATCHES .m$)
       # objective c files
       set_source_files_properties(
         ${SRC} 
@@ -247,16 +251,6 @@ if (APPLE)
   # more mac specific things
   set_target_properties(${my_executable} PROPERTIES LINK_FLAGS "-framework MetalKit")
   set_target_properties(${my_executable} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/MetalInfo.plist)
-
-else()
-  if (UNIX)
-    # LINUX
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-    set_target_properties (${my_executable} PROPERTIES COMPILE_FLAGS "-g -Wall -Wextra -pedantic ${BUILD_32}")
-  else()
-    # WINDOWS
-    set_target_properties (${my_executable} PROPERTIES COMPILE_FLAGS "/W4")
-  endif()
 endif()
 
 ##########################################################################
