@@ -25,7 +25,6 @@ bool Sphere::intersect(const Ray &/*r*/, Hit &/*h*/) const {
   // intersection point, the material, and the normal
 
   return false;
-
 } 
 
 // ====================================================================
@@ -38,10 +37,7 @@ Vec3f ComputeSpherePoint(float s, float t, const Vec3f center, float radius) {
   float factor = sqrt(1-y*y);
   float x = factor*cos(angle);
   float z = factor*-sin(angle);
-  Vec3f answer = Vec3f(x,y,z);
-  answer *= radius;
-  answer += center;
-  return answer;
+  return Vec3f{x,y,z} * radius + center;
 }
 
 void Sphere::addRasterizedFaces(Mesh *m, ArgParser *args) {
@@ -56,7 +52,7 @@ void Sphere::addRasterizedFaces(Mesh *m, ArgParser *args) {
   int offset = m->numVertices(); //vertices.size();
 
   // place vertices
-  m->addVertex(center+radius*Vec3f(0,-1,0));  // bottom
+  m->addVertex(center+radius*Vec3f{0,-1,0});  // bottom
   for (j = 1; j < v; j++) {  // middle
     for (i = 0; i < h; i++) {
       float s = i / float(h);
@@ -64,7 +60,7 @@ void Sphere::addRasterizedFaces(Mesh *m, ArgParser *args) {
       m->addVertex(ComputeSpherePoint(s,t,center,radius));
     }
   }
-  m->addVertex(center+radius*Vec3f(0,1,0));  // top
+  m->addVertex(center+radius*Vec3f{0,1,0});  // top
 
   // the middle patches
   for (j = 1; j < v-1; j++) {

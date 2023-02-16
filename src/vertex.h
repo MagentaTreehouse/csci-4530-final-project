@@ -11,14 +11,14 @@ public:
 
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  Vertex(int i, const Vec3f &pos) : position(pos) { index = i; s = 0; t = 0; }
-  
+  Vertex(int i, const Vec3f &pos): position{pos}, s{}, t{}, index{i} {}
+
   // =========
   // ACCESSORS
-  int getIndex() const { return index; }
-  const Vec3f& get() const { return position; }
-  float get_s() const { return s; }
-  float get_t() const { return t; }
+  [[nodiscard]] int getIndex() const { return index; }
+  [[nodiscard]] const Vec3f& get() const { return position; }
+  [[nodiscard]] float get_s() const { return s; }
+  [[nodiscard]] float get_t() const { return t; }
 
   // =========
   // MODIFIERS
@@ -48,4 +48,3 @@ private:
 // ==========================================================
 
 #endif
-

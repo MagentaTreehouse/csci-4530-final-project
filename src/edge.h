@@ -21,41 +21,41 @@ public:
 
   // =========
   // ACCESSORS
-  Vertex* getStartVertex() const { assert (start_vertex != NULL); return start_vertex; }
-  Vertex* getEndVertex() const { assert (end_vertex != NULL); return end_vertex; }
-  Edge* getNext() const { assert (next != NULL); return next; }
-  Face* getFace() const { assert (face != NULL); return face; }
-  Edge* getOpposite() const {
-    // warning!  the opposite edge might be NULL!
+  [[nodiscard]] Vertex* getStartVertex() const { assert (start_vertex != nullptr); return start_vertex; }
+  [[nodiscard]] Vertex* getEndVertex() const { assert (end_vertex != nullptr); return end_vertex; }
+  [[nodiscard]] Edge* getNext() const { assert (next != nullptr); return next; }
+  [[nodiscard]] Face* getFace() const { assert (face != nullptr); return face; }
+  [[nodiscard]] Edge* getOpposite() const {
+    // warning!  the opposite edge might be nullptr!
     return opposite; }
   float Length() const;
 
   // =========
   // MODIFIERS
   void setOpposite(Edge *e) {
-    assert (opposite == NULL); 
-    assert (e != NULL);
-    assert (e->opposite == NULL);
+    assert (opposite == nullptr); 
+    assert (e != nullptr);
+    assert (e->opposite == nullptr);
     opposite = e; 
     e->opposite = this; 
   }
   void clearOpposite() { 
-    if (opposite == NULL) return; 
+    if (!opposite) return; 
     assert (opposite->opposite == this); 
-    opposite->opposite = NULL;
-    opposite = NULL; 
+    opposite->opposite = nullptr;
+    opposite = nullptr; 
   }
   void setNext(Edge *e) {
-    assert (next == NULL);
-    assert (e != NULL);
+    assert (next == nullptr);
+    assert (e != nullptr);
     assert (face == e->face);
     next = e;
   }
 
 private:
 
-  Edge(const Edge&) { assert(0); }
-  Edge& operator=(const Edge&) { assert(0); exit(0); }
+  Edge(const Edge&) = delete;
+  Edge& operator=(const Edge&) = delete;
 
   // ==============
   // REPRESENTATION

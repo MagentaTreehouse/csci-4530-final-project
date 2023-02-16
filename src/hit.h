@@ -3,6 +3,7 @@
 
 #include <float.h>
 #include <ostream>
+#include <limits>
 
 #include "ray.h"
 
@@ -13,24 +14,24 @@ class Material;
 // ====================================================================
 
 class Hit {
-  
+
 public:
 
   // CONSTRUCTOR & DESTRUCTOR
-  Hit() { 
-    t = FLT_MAX;
-    material = NULL;
-    normal = Vec3f(0,0,0); 
-    texture_s = 0;
-    texture_t = 0;
-  }
+  Hit():
+    t{std::numeric_limits<float>::max()},
+    material{},
+    normal{},
+    texture_s{},
+    texture_t{}
+  {}
 
   // ACCESSORS
-  float getT() const { return t; }
-  Material* getMaterial() const { return material; }
-  Vec3f getNormal() const { return normal; }
-  float get_s() const { return texture_s; }
-  float get_t() const { return texture_t; }
+  [[nodiscard]] float getT() const { return t; }
+  [[nodiscard]] Material* getMaterial() const { return material; }
+  [[nodiscard]] const Vec3f &getNormal() const { return normal; }
+  [[nodiscard]] float get_s() const { return texture_s; }
+  [[nodiscard]] float get_t() const { return texture_t; }
 
   // MODIFIER
   void set(float _t, Material *m, Vec3f n) {

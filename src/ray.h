@@ -11,20 +11,19 @@
 class Ray {
 
 public:
-
   // CONSTRUCTOR & DESTRUCTOR
-  Ray (const Vec3f &orig, const Vec3f &dir) {
-    origin = orig; 
-    direction = dir; }
+  Ray(const Vec3f &orig, const Vec3f &dir):
+    origin{orig}, direction{dir}
+  {}
 
   // ACCESSORS
-  const Vec3f& getOrigin() const { return origin; }
-  const Vec3f& getDirection() const { return direction; }
-  Vec3f pointAtParameter(float t) const {
+  [[nodiscard]] const Vec3f& getOrigin() const { return origin; }
+  [[nodiscard]] const Vec3f& getDirection() const { return direction; }
+  [[nodiscard]] Vec3f pointAtParameter(float t) const {
     return origin+direction*t; }
 
 private:
-  Ray () { assert(0); } // don't use this constructor
+  Ray() = delete;
 
   // REPRESENTATION
   Vec3f origin;

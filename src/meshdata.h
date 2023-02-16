@@ -32,7 +32,7 @@ enum RENDER_MODE { RENDER_MATERIALS, RENDER_RADIANCE, RENDER_FORM_FACTORS,
 
 
 typedef struct MeshData {
-  
+
   // REPRESENTATION
   int width;
   int height;

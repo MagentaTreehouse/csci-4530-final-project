@@ -4,7 +4,6 @@
 #include <vector>
 #include "vectors.h"
 #include "meshdata.h"
-
 #include "argparser.h"
 
 // ======================================================================
@@ -23,7 +22,7 @@
 // The appropriate value for epsilon depends on the precision of
 // the floating point calculations on your hardware **AND** on the
 // overall dimensions of the scene and your camera projection matrix.
-#define EPSILON 0.0001
+constexpr auto EPSILON{0.0001};
 
 
 // =========================================================================
@@ -32,31 +31,24 @@
 // The sRGB values make best use of 8 bit storage and are the best
 // input for most displays and darkened viewing environments.
 
-#define SRGB_ALPHA 0.055
+constexpr auto SRGB_ALPHA{0.055};
 
 inline float linear_to_srgb(float x) {
-  float answer;
-  if (x <= 0.0031308)
-    answer = 12.92*x;
-  else 
-    answer = (1+SRGB_ALPHA)*(pow(x,1/2.4)-SRGB_ALPHA);
-  return answer;
+  return x <= 0.0031308f?
+    12.92f*x :
+    (1+SRGB_ALPHA)*(pow(x,1/2.4)-SRGB_ALPHA);
 }
 
 inline float srgb_to_linear(float x) {
-  float answer;
-  if (x <= 0.04045)
-    answer = x/12.92;
-  else 
-    answer = pow((x+SRGB_ALPHA)/(1+SRGB_ALPHA),2.4);
-  return answer;
+  return x <= 0.04045f?
+    x/12.92f :
+    pow((x+SRGB_ALPHA)/(1+SRGB_ALPHA),2.4);
 }
 
 // =========================================================================
 // utility functions 
 inline float DistanceBetweenTwoPoints(const Vec3f &p1, const Vec3f &p2) {
-  Vec3f v = p1-p2;
-  return v.Length();
+  return (p1-p2).Length();
 }
 
 inline float AreaOfTriangle(float a, float b, float c) {
@@ -65,15 +57,16 @@ inline float AreaOfTriangle(float a, float b, float c) {
   //  sqrt[s*(s-a)*(s-b)*(s-c)]
   //    where s = (a+b+c)/2
   // also... Area of Triangle = 0.5 * x * c
-  float s = (a+b+c) / (float)2;
+  const float s = (a+b+c) / 2;
   return sqrt(s*(s-a)*(s-b)*(s-c));
 }
 
 inline float AreaOfTriangle(const Vec3f &a, const Vec3f &b, const Vec3f &c) {
-  float aside = DistanceBetweenTwoPoints(a,b);
-  float bside = DistanceBetweenTwoPoints(b,c);
-  float cside = DistanceBetweenTwoPoints(c,a);
-  return AreaOfTriangle(aside,bside,cside);
+  return AreaOfTriangle(
+    DistanceBetweenTwoPoints(a,b),
+    DistanceBetweenTwoPoints(b,c),
+    DistanceBetweenTwoPoints(c,a)
+  );
 }
 
 inline Vec3f ComputeNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
@@ -91,9 +84,11 @@ inline Vec3f ComputeNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
 inline Vec3f RandomUnitVector() {
   Vec3f tmp;
   while (true) {
-    tmp = Vec3f(2*GLOBAL_args->rand()-1,  // random real in [-1,1]
-                2*GLOBAL_args->rand()-1,  // random real in [-1,1]
-                2*GLOBAL_args->rand()-1); // random real in [-1,1]
+    tmp = {
+      2*GLOBAL_args->rand()-1,  // random real in [-1,1]
+      2*GLOBAL_args->rand()-1,  // random real in [-1,1]
+      2*GLOBAL_args->rand()-1   // random real in [-1,1]
+    };
     if (tmp.Length() < 1) break;
   }
   tmp.Normalize();

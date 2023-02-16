@@ -1,7 +1,9 @@
 #ifndef _RADIOSITY_H_
 #define _RADIOSITY_H_
 
+#include <cassert>
 #include "argparser.h"
+#include "vectors.h"
 
 class Mesh;
 class Face;
@@ -30,33 +32,33 @@ public:
 
   // =========
   // ACCESSORS
-  Mesh* getMesh() const { return mesh; }
-  float getFormFactor(int i, int j) const {
+  [[nodiscard]] Mesh* getMesh() const { return mesh; }
+  [[nodiscard]] float getFormFactor(int i, int j) const {
     // F_i,j radiant energy leaving i arriving at j
     assert (i >= 0 && i < num_faces);
     assert (j >= 0 && j < num_faces);
-    assert (formfactors != NULL);
+    assert (formfactors != nullptr);
     return formfactors[i*num_faces+j]; }
-  float getArea(int i) const {
+  [[nodiscard]] float getArea(int i) const {
     assert (i >= 0 && i < num_faces);
     return area[i]; }
-  Vec3f getUndistributed(int i) const {
+  [[nodiscard]] const Vec3f &getUndistributed(int i) const {
     assert (i >= 0 && i < num_faces);
     return undistributed[i]; }
-  Vec3f getAbsorbed(int i) const {
+  [[nodiscard]] const Vec3f &getAbsorbed(int i) const {
     assert (i >= 0 && i < num_faces);
     return absorbed[i]; }
-  Vec3f getRadiance(int i) const {
+  [[nodiscard]] const Vec3f &getRadiance(int i) const {
     assert (i >= 0 && i < num_faces);
     return radiance[i]; }
-  
+
   // =========
   // MODIFIERS
   float Iterate();
   void setFormFactor(int i, int j, float value) { 
     assert (i >= 0 && i < num_faces);
     assert (j >= 0 && j < num_faces);
-    assert (formfactors != NULL);
+    assert (formfactors != nullptr);
     formfactors[i*num_faces+j] = value; }
   void normalizeFormFactors(int i) {
     float sum = 0;
@@ -69,20 +71,20 @@ public:
   void setArea(int i, float value) {
     assert (i >= 0 && i < num_faces);
     area[i] = value; }
-  void setUndistributed(int i, Vec3f value) { 
+  void setUndistributed(int i, const Vec3f &value) { 
     assert (i >= 0 && i < num_faces);
     undistributed[i] = value; }
   void findMaxUndistributed();
-  void setAbsorbed(int i, Vec3f value) { 
+  void setAbsorbed(int i, const Vec3f &value) { 
     assert (i >= 0 && i < num_faces);
     absorbed[i] = value; }
-  void setRadiance(int i, Vec3f value) { 
+  void setRadiance(int i, const Vec3f &value) { 
     assert (i >= 0 && i < num_faces);
     radiance[i] = value; }
 
-  int triCount();
+  std::size_t triCount() const;
   void packMesh(float* &current);
-  
+
 private:
   Vec3f setupHelperForColor(Face *f, int i, int j);
 

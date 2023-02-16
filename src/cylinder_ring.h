@@ -1,7 +1,9 @@
 #ifndef _CYLINDER_RING_H_
 #define _CYLINDER_RING_H_
 
+#include <cassert>
 #include "primitive.h"
+#include "vectors.h"
 
 // ====================================================================
 // ====================================================================
@@ -21,7 +23,7 @@ public:
   ~CylinderRing() {}
 
   // for ray tracing
-  bool intersect(const Ray &r, Hit &h) const;
+  [[nodiscard]] bool intersect(const Ray &r, Hit &h) const;
 
   // for OpenGL rendering & radiosity
   void addRasterizedFaces(Mesh *m, ArgParser *args);

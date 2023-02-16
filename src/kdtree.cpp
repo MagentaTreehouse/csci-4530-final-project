@@ -1,8 +1,8 @@
 #include "kdtree.h"
 #include "utils.h"
 
-#define MAX_PHOTONS_BEFORE_SPLIT 100
-#define MAX_DEPTH 15
+constexpr auto MAX_PHOTONS_BEFORE_SPLIT{100};
+constexpr auto MAX_DEPTH{15};
 
 // ==================================================================
 // DESTRUCTOR
@@ -35,17 +35,17 @@ bool KDTree::PhotonInCell(const Photon &p) {
   return false;
 }
 
-int KDTree::numPhotons() {
-  int count = photons.size();
-  if (child1 != NULL) count+=child1->numPhotons();
-  if (child2 != NULL) count+=child2->numPhotons();
+std::size_t KDTree::numPhotons() const {
+  std::size_t count = photons.size();
+  if (child1 != nullptr) count+=child1->numPhotons();
+  if (child2 != nullptr) count+=child2->numPhotons();
   return count;
 }
 
-int KDTree::numBoxes() {
-  int count = isLeaf();
-  if (child1 != NULL) count+=child1->numBoxes();
-  if (child2 != NULL) count+=child2->numBoxes();
+std::size_t KDTree::numBoxes() const {
+  std::size_t count = isLeaf();
+  if (child1 != nullptr) count+=child1->numBoxes();
+  if (child2 != nullptr) count+=child2->numBoxes();
   return count;
 }
 
@@ -137,37 +137,33 @@ void KDTree::SplitCell() {
   if (dx >= dy && dx >= dz) {
     split_axis = 0;
     split_value = min.x()+dx/2.0;
-    min1 = Vec3f(min.x()    ,min.y(),min.z());
-    max1 = Vec3f(split_value,max.y(),max.z());
-    min2 = Vec3f(split_value,min.y(),min.z());
-    max2 = Vec3f(max.x()       ,max.y(),max.z());
+    min1 = {min.x()    ,min.y(),min.z()};
+    max1 = {split_value,max.y(),max.z()};
+    min2 = {split_value,min.y(),min.z()};
+    max2 = {max.x()    ,max.y(),max.z()};
   } else if (dy >= dx && dy >= dz) {
     split_axis = 1;
     split_value = min.y()+dy/2.0;
-    min1 = Vec3f(min.x(),min.y()    ,min.z());
-    max1 = Vec3f(max.x(),split_value,max.z());
-    min2 = Vec3f(min.x(),split_value,min.z());
-    max2 = Vec3f(max.x(),max.y()    ,max.z());
+    min1 = {min.x(),min.y()    ,min.z()};
+    max1 = {max.x(),split_value,max.z()};
+    min2 = {min.x(),split_value,min.z()};
+    max2 = {max.x(),max.y()    ,max.z()};
   } else {
     assert (dz >= dx && dz >= dy);
     split_axis = 2;
     split_value = min.z()+dz/2.0;
-    min1 = Vec3f(min.x(),min.y(),min.z()    );
-    max1 = Vec3f(max.x(),max.y(),split_value);
-    min2 = Vec3f(min.x(),min.y(),split_value);
-    max2 = Vec3f(max.x(),max.y(),max.z()    );
+    min1 = {min.x(),min.y(),min.z()    };
+    max1 = {max.x(),max.y(),split_value};
+    min2 = {min.x(),min.y(),split_value};
+    max2 = {max.x(),max.y(),max.z()    };
   }
   // create two new children
-  child1 = new KDTree(BoundingBox(min1,max1),depth+1);
-  child2 = new KDTree(BoundingBox(min2,max2),depth+1);
-  int num_photons = photons.size();
-  std::vector<Photon> tmp = photons;
-  photons.clear();
+  child1 = new KDTree({min1,max1},depth+1);
+  child2 = new KDTree({min2,max2},depth+1);
+  const std::vector<Photon> tmp = std::move(photons);
   // add all the photons to one of those children
-  for (int i = 0; i < num_photons; i++) {
-    const Photon &p = tmp[i];
+  for (const auto &p: tmp)
     this->AddPhoton(p);
-  }
 }
 
 // ==================================================================

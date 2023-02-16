@@ -20,8 +20,8 @@ public:
     if (tstop  >  1000) tstop  =  1000;
     a = ray.pointAtParameter(tstart);
     b = ray.pointAtParameter(tstop); }
-  const Vec3f& getStart() const { return a; }
-  const Vec3f& getEnd() const { return b; }
+  [[nodiscard]] const Vec3f& getStart() const { return a; }
+  [[nodiscard]] const Vec3f& getEnd() const { return b; }
 private:
   // REPRESENTATION
   Vec3f a;
@@ -44,28 +44,24 @@ public:
   static void Activate() { Clear(); activated = 1; }
   static void Deactivate() { activated = 0; }
 
-  static bool isActivated() { return (activated!=0); }
-  
+  static bool isActivated() { return activated != 0; }
+
   // when activated, these function calls store the segments of the tree
   static void AddMainSegment(const Ray &ray, float tstart, float tstop) {
-    if (!activated) return;
-    main_segments.push_back(Segment(ray,tstart,tstop));
+    if (activated) main_segments.emplace_back(ray,tstart,tstop);
   }
   static void AddShadowSegment(const Ray &ray, float tstart, float tstop) {
-    if (!activated) return;
-    shadow_segments.push_back(Segment(ray,tstart,tstop));
+    if (activated) shadow_segments.emplace_back(ray,tstart,tstop);
   }
   static void AddReflectedSegment(const Ray &ray, float tstart, float tstop) {
-    if (!activated) return;
-    reflected_segments.push_back(Segment(ray,tstart,tstop));
+    if (activated) reflected_segments.emplace_back(ray,tstart,tstop);
   }
   static void AddTransmittedSegment(const Ray &ray, float tstart, float tstop) {
-    if (!activated) return;
-    transmitted_segments.push_back(Segment(ray,tstart,tstop));
+    if (activated) transmitted_segments.emplace_back(ray,tstart,tstop);
   }
 
-  static int numSegments() { return main_segments.size() + shadow_segments.size() + reflected_segments.size() + transmitted_segments.size(); }
-  static int triCount();
+  static std::size_t numSegments() { return main_segments.size() + shadow_segments.size() + reflected_segments.size() + transmitted_segments.size(); }
+  static std::size_t triCount();
   static void packMesh(float* &current);
 
   // HELPER FUNCTIONS
@@ -80,7 +76,7 @@ private:
 
   // REPRESENTATION
   static int activated;
-  
+
   static std::vector<Segment> main_segments;
   static std::vector<Segment> shadow_segments;
   static std::vector<Segment> reflected_segments;

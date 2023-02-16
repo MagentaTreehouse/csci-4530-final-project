@@ -10,7 +10,7 @@
 class Color {
 public:
   Color(int r_=255, int g_=255, int b_=255) : r(r_),g(g_),b(b_) {}
-  bool isWhite() const { return r==255 && g==255 && b==255; }
+  [[nodiscard]] bool isWhite() const { return r==255 && g==255 && b==255; }
   int r,g,b;
 };
 
@@ -22,8 +22,8 @@ class Image {
 public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  Image(const std::string &filename = "") : 
-  width(0), height(0), data(NULL), gl_data(NULL) {
+  Image(const std::string &filename = ""): width{}, height{}, data{}, gl_data{}
+  {
     if (filename != "") Load(filename); 
   }
   void Allocate(int w, int h) {
@@ -31,9 +31,9 @@ public:
     height = h;
     delete [] data;
     delete [] gl_data;
-    gl_data = NULL;
+    gl_data = nullptr;
     if (width == 0 && height == 0) {
-      data = NULL;
+      data = nullptr;
     } else {
       assert (width > 0 && height > 0);
       data = new Color[width*height]; 
@@ -64,7 +64,7 @@ public:
   // ACCESSORS
   int Width() const { return width; }
   int Height() const { return height; }
-  const Color& GetPixel(int x, int y) const {
+  [[nodiscard]] const Color& GetPixel(int x, int y) const {
     assert(x >= 0 && x < width);
     assert(y >= 0 && y < height);
     return data[y*width + x]; }
@@ -85,7 +85,7 @@ public:
   // LOAD & SAVE
   bool Load(const std::string &filename);
   bool Save(const std::string &filename) const; 
-  
+
 private:
   // ==============
   // REPRESENTATION

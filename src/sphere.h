@@ -17,7 +17,7 @@ public:
     assert (radius >= 0); }
 
   // for ray tracing
-  virtual bool intersect(const Ray &r, Hit &h) const;
+  [[nodiscard]] virtual bool intersect(const Ray &r, Hit &h) const;
 
   // for OpenGL rendering & radiosity
   void addRasterizedFaces(Mesh *m, ArgParser *args);

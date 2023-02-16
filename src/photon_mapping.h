@@ -25,8 +25,8 @@ class PhotonMapping {
   PhotonMapping(Mesh *_mesh, ArgParser *_args) {
     mesh = _mesh;
     args = _args;
-    raytracer = NULL;
-    kdtree = NULL;
+    raytracer = nullptr;
+    kdtree = nullptr;
   }
   ~PhotonMapping() { Clear(); }
   void setRayTracer(RayTracer *r) { raytracer = r; }
@@ -35,12 +35,12 @@ class PhotonMapping {
   // step 1: send the photons throughout the scene
   void TracePhotons();
   // step 2: collect the photons and return the contribution from indirect illumination
-  Vec3f GatherIndirect(const Vec3f &point, const Vec3f &normal, const Vec3f &direction_from) const;
+  [[nodiscard]] Vec3f GatherIndirect(const Vec3f &point, const Vec3f &normal, const Vec3f &direction_from) const;
 
   void Clear();
   
-  int triCount() const;
-  int pointCount() const;
+  [[nodiscard]] std::size_t triCount() const;
+  [[nodiscard]] std::size_t pointCount() const;
   void packMesh(float* &current, float* &current_points);
   
  private:

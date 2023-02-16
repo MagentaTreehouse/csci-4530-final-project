@@ -10,7 +10,7 @@ bool Image::Save(const std::string &filename) const {
     return false;
   }
   FILE *file = fopen(filename.c_str(), "wb");
-  if (file == NULL) {
+  if (file == nullptr) {
     std::cerr << "Unable to open " << filename << " for writing\n";
     return false;
   }
@@ -42,7 +42,7 @@ bool Image::Load(const std::string &filename) {
     return false;
   }
   FILE *file = fopen(filename.c_str(),"rb");
-  if (file == NULL) {
+  if (file == nullptr) {
     std::cerr << "Unable to open " << filename << " for reading\n";
     return false;
   }

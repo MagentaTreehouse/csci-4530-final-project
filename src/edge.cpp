@@ -6,15 +6,15 @@ Edge::Edge(Vertex *vs, Vertex *ve, Face *f) {
   start_vertex = vs;
   end_vertex = ve;
   face = f;
-  next = NULL;
-  opposite = NULL;
+  next = nullptr;
+  opposite = nullptr;
 }
 
 // EDGE DESTRUCTOR
 Edge::~Edge() { 
   // disconnect from the opposite edge
-  if (opposite != NULL)
-    opposite->opposite = NULL;
+  if (opposite != nullptr)
+    opposite->opposite = nullptr;
   // NOTE: the "prev" edge (which has a "next" pointer pointing to
   // this edge) will also be deleted as part of the triangle removal,
   // so we don't need to disconnect that

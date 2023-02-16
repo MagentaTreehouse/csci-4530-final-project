@@ -19,27 +19,29 @@ class KDTree {
   KDTree(const BoundingBox &_bbox, int _depth=0) {
     bbox = _bbox;
     depth = _depth;
-    child1=NULL;
-    child2=NULL;      
+    child1=nullptr;
+    child2=nullptr;      
   }
   ~KDTree();
 
   // =========
   // ACCESSORS
+  [[nodiscard]] std::size_t numPhotons() const;
+  [[nodiscard]] std::size_t numBoxes() const;
   // boundingbox
-  const Vec3f& getMin() const { return bbox.getMin(); }
-  const Vec3f& getMax() const { return bbox.getMax(); }
-  bool overlaps(const BoundingBox &bb) const;
+  [[nodiscard]] const Vec3f& getMin() const { return bbox.getMin(); }
+  [[nodiscard]] const Vec3f& getMax() const { return bbox.getMax(); }
+  [[nodiscard]] bool overlaps(const BoundingBox &bb) const;
   // hierarchy
-  int getDepth() const { return depth; }
-  bool isLeaf() const { 
-    if (child1==NULL&&child2==NULL) return true;
-    assert (child1 != NULL && child2 != NULL);
+  [[nodiscard]] int getDepth() const { return depth; }
+  [[nodiscard]] bool isLeaf() const { 
+    if (child1==nullptr&&child2==nullptr) return true;
+    assert (child1 != nullptr && child2 != nullptr);
     return false; }
-  const KDTree* getChild1() const { assert (!isLeaf()); assert (child1 != NULL); return child1; }
-  const KDTree* getChild2() const { assert (!isLeaf()); assert (child2 != NULL); return child2; }
+  const KDTree* getChild1() const { assert (!isLeaf()); assert (child1 != nullptr); return child1; }
+  const KDTree* getChild2() const { assert (!isLeaf()); assert (child2 != nullptr); return child2; }
   // photons
-  const std::vector<Photon>& getPhotons() const { return photons; }
+  [[nodiscard]] const std::vector<Photon>& getPhotons() const { return photons; }
   void CollectPhotonsInBox(const BoundingBox &bb, std::vector<Photon> &photons) const;
 
   // =========
@@ -47,9 +49,6 @@ class KDTree {
   void AddPhoton(const Photon &p);
   bool PhotonInCell(const Photon &p);
 
-  int numPhotons();
-  int numBoxes();
-  
  private:
 
   // HELPER FUNCTION

@@ -26,14 +26,12 @@ public:
 
   ArgParser(int argc, const char *argv[], MeshData *_mesh_data);
 
-  
-  double rand() {
-#if 1
+  static double rand() {
+#ifndef DETERMINISTIC_RAND
     // random seed
     static std::random_device rd;    
     static std::mt19937 engine(rd());
 #else
-    // deterministic randomness
     static std::mt19937 engine(37);
 #endif
     static std::uniform_real_distribution<double> dist(0.0, 1.0);
@@ -59,7 +57,6 @@ public:
   Radiosity *radiosity;
   PhotonMapping *photon_mapping;
   BoundingBox *bbox;
-
 
 };
 

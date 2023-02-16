@@ -17,7 +17,7 @@
 void PhotonMapping::Clear() {
   // cleanup all the photons
   delete kdtree;
-  kdtree = NULL;
+  kdtree = nullptr;
 }
 
 
@@ -26,9 +26,6 @@ void PhotonMapping::Clear() {
 
 void PhotonMapping::TracePhoton(const Vec3f &/*position*/, const Vec3f &/*direction*/,
 				const Vec3f &/*energy*/, int /*iter*/) {
-
-
-
 
   // ==============================================
   // ASSIGNMENT: IMPLEMENT RECURSIVE PHOTON TRACING
@@ -60,29 +57,29 @@ void PhotonMapping::TracePhotons() {
   Vec3f diff = max-min;
   min -= 0.001f*diff;
   max += 0.001f*diff;
-  kdtree = new KDTree(BoundingBox(min,max));
+  kdtree = new KDTree({min,max});
 
   // photons emanate from the light sources
   const std::vector<Face*>& lights = mesh->getLights();
 
   // compute the total area of the lights
-  float total_lights_area = 0;
-  for (unsigned int i = 0; i < lights.size(); i++) {
-    total_lights_area += lights[i]->getArea();
+  float total_lights_area{};
+  for (const Face *faceP: lights) {
+    total_lights_area += faceP->getArea();
   }
 
   // shoot a constant number of photons per unit area of light source
   // (alternatively, this could be based on the total energy of each light)
-  for (unsigned int i = 0; i < lights.size(); i++) {  
-    float my_area = lights[i]->getArea();
-    int num = args->mesh_data->num_photons_to_shoot * my_area / total_lights_area;
+  for (const Face *faceP: lights) {  
+    const float my_area = faceP->getArea();
+    const int num = args->mesh_data->num_photons_to_shoot * my_area / total_lights_area;
     // the initial energy for this photon
-    Vec3f energy = my_area/float(num) * lights[i]->getMaterial()->getEmittedColor();
-    Vec3f normal = lights[i]->computeNormal();
+    Vec3f energy = my_area/num * faceP->getMaterial()->getEmittedColor();
+    Vec3f normal = faceP->computeNormal();
     for (int j = 0; j < num; j++) {
-      Vec3f start = lights[i]->RandomPoint();
+      const Vec3f start = faceP->RandomPoint();
       // the initial direction for this photon (for diffuse light sources)
-      Vec3f direction = RandomDiffuseDirection(normal);
+      const Vec3f direction = RandomDiffuseDirection(normal);
       TracePhoton(start,direction,energy,0);
     }
   }
@@ -102,9 +99,9 @@ Vec3f PhotonMapping::GatherIndirect(const Vec3f &/*point*/, const Vec3f &/*norma
                                     const Vec3f &/*direction_from*/) const {
 
 
-  if (kdtree == NULL) { 
+  if (kdtree == nullptr) { 
     std::cout << "WARNING: Photons have not been traced throughout the scene." << std::endl;
-    return Vec3f(0,0,0); 
+    return {0,0,0}; 
   }
 
   // ================================================================
@@ -116,85 +113,84 @@ Vec3f PhotonMapping::GatherIndirect(const Vec3f &/*point*/, const Vec3f &/*norma
   // average the energy of those photons over that radius
   
   // return the color
-  return Vec3f(0,0,0);
-
-
+  return {0,0,0};
 }
 
 // ======================================================================
 // ======================================================================
 // Helper functions to render the photons & kdtree
 
-int PhotonMapping::triCount() const {
-  int tri_count = 0;
-  if (GLOBAL_args->mesh_data->render_kdtree == true && kdtree != NULL) 
+std::size_t PhotonMapping::triCount() const {
+  std::size_t tri_count{};
+  if (GLOBAL_args->mesh_data->render_kdtree == true && kdtree != nullptr) 
     tri_count += kdtree->numBoxes()*12*12;
-  if (GLOBAL_args->mesh_data->render_photon_directions == true && kdtree != NULL) 
+  if (GLOBAL_args->mesh_data->render_photon_directions == true && kdtree != nullptr) 
     tri_count += kdtree->numPhotons()*12;
   return tri_count;
 }
 
-int PhotonMapping::pointCount() const {
-  if (GLOBAL_args->mesh_data->render_photons == false || kdtree == NULL) return 0;
+std::size_t PhotonMapping::pointCount() const {
+  if (GLOBAL_args->mesh_data->render_photons == false || kdtree == nullptr) return 0;
   return kdtree->numPhotons();
 }
 
 // defined in raytree.cpp
-void addBox(float* &current, Vec3f start, Vec3f end, Vec3f color, float width);
+void addBox(float* &current, const Vec3f &start, const Vec3f &end, const Vec3f &color, float width);
 
 // ======================================================================
 
-void packKDTree(const KDTree *kdtree, float* &current, int &count) {
+void packKDTree(const KDTree *kdtree, float* &current, std::size_t &count) {
   if (!kdtree->isLeaf()) {
-    if (kdtree->getChild1() != NULL) { packKDTree(kdtree->getChild1(),current,count); }
-    if (kdtree->getChild2() != NULL) { packKDTree(kdtree->getChild2(),current,count); }
+    if (kdtree->getChild1()) packKDTree(kdtree->getChild1(),current,count);
+    if (kdtree->getChild2()) packKDTree(kdtree->getChild2(),current,count);
   } else {
+    const Vec3f &a = kdtree->getMin();
+    const Vec3f &b = kdtree->getMax();
 
-    Vec3f a = kdtree->getMin();
-    Vec3f b = kdtree->getMax();
+    Vec3f corners[]{
+      {a.x(),a.y(),a.z()},
+      {a.x(),a.y(),b.z()},
+      {a.x(),b.y(),a.z()},
+      {a.x(),b.y(),b.z()},
+      {b.x(),a.y(),a.z()},
+      {b.x(),a.y(),b.z()},
+      {b.x(),b.y(),a.z()},
+      {b.x(),b.y(),b.z()}
+    };
 
-    Vec3f corners[8] = { Vec3f(a.x(),a.y(),a.z()),
-                         Vec3f(a.x(),a.y(),b.z()),
-                         Vec3f(a.x(),b.y(),a.z()),
-                         Vec3f(a.x(),b.y(),b.z()),
-                         Vec3f(b.x(),a.y(),a.z()),
-                         Vec3f(b.x(),a.y(),b.z()),
-                         Vec3f(b.x(),b.y(),a.z()),
-                         Vec3f(b.x(),b.y(),b.z()) };
+    const float width = 0.01 * (a-b).Length();
 
-    float width = 0.01 * (a-b).Length();
-    
-    addBox(current,corners[0],corners[1],Vec3f(1,1,0),width);
-    addBox(current,corners[1],corners[3],Vec3f(1,1,0),width);
-    addBox(current,corners[3],corners[2],Vec3f(1,1,0),width);
-    addBox(current,corners[2],corners[0],Vec3f(1,1,0),width);
+    addBox(current,corners[0],corners[1],{1,1,0},width);
+    addBox(current,corners[1],corners[3],{1,1,0},width);
+    addBox(current,corners[3],corners[2],{1,1,0},width);
+    addBox(current,corners[2],corners[0],{1,1,0},width);
 
-    addBox(current,corners[4],corners[5],Vec3f(1,1,0),width);
-    addBox(current,corners[5],corners[7],Vec3f(1,1,0),width);
-    addBox(current,corners[7],corners[6],Vec3f(1,1,0),width);
-    addBox(current,corners[6],corners[4],Vec3f(1,1,0),width);
+    addBox(current,corners[4],corners[5],{1,1,0},width);
+    addBox(current,corners[5],corners[7],{1,1,0},width);
+    addBox(current,corners[7],corners[6],{1,1,0},width);
+    addBox(current,corners[6],corners[4],{1,1,0},width);
 
-    addBox(current,corners[0],corners[4],Vec3f(1,1,0),width);
-    addBox(current,corners[1],corners[5],Vec3f(1,1,0),width);
-    addBox(current,corners[2],corners[6],Vec3f(1,1,0),width);
-    addBox(current,corners[3],corners[7],Vec3f(1,1,0),width);
-    
+    addBox(current,corners[0],corners[4],{1,1,0},width);
+    addBox(current,corners[1],corners[5],{1,1,0},width);
+    addBox(current,corners[2],corners[6],{1,1,0},width);
+    addBox(current,corners[3],corners[7],{1,1,0},width);
+
     count++;
   }
 }
 
 // ======================================================================
 
-void packPhotons(const KDTree *kdtree, float* &current_points, int &count) {
+void packPhotons(const KDTree *kdtree, float* &current_points, std::size_t &count) {
   if (!kdtree->isLeaf()) {
-      if (kdtree->getChild1() != NULL) { packPhotons(kdtree->getChild1(),current_points,count); }
-      if (kdtree->getChild2() != NULL) { packPhotons(kdtree->getChild2(),current_points,count); }
+      if (kdtree->getChild1()) packPhotons(kdtree->getChild1(),current_points,count);
+      if (kdtree->getChild2()) packPhotons(kdtree->getChild2(),current_points,count);
   } else {
-    for (unsigned int i = 0; i < kdtree->getPhotons().size(); i++) {
+    for (std::size_t i{}; i < kdtree->getPhotons().size(); i++) {
       const Photon &p = kdtree->getPhotons()[i];
-      Vec3f v = p.getPosition();
-      Vec3f color = p.getEnergy()*float(GLOBAL_args->mesh_data->num_photons_to_shoot);
-      float12 t = { float(v.x()),float(v.y()),float(v.z()),1,   0,0,0,0,   float(color.r()),float(color.g()),float(color.b()),1 };
+      const Vec3f &v = p.getPosition();
+      const Vec3f color = p.getEnergy()*GLOBAL_args->mesh_data->num_photons_to_shoot;
+      float12 t{ float(v.x()),float(v.y()),float(v.z()),1,   0,0,0,0,   float(color.r()),float(color.g()),float(color.b()),1 };
       memcpy(current_points, &t, sizeof(float)*12); current_points += 12; 
       count++;
     }
@@ -202,43 +198,43 @@ void packPhotons(const KDTree *kdtree, float* &current_points, int &count) {
 }
 
 
-void packPhotonDirections(const KDTree *kdtree, float* &current, int &count) {
+void packPhotonDirections(const KDTree *kdtree, float* &current, std::size_t &count) {
   if (!kdtree->isLeaf()) {
-      if (kdtree->getChild1() != NULL) { packPhotonDirections(kdtree->getChild1(),current,count); }
-      if (kdtree->getChild2() != NULL) { packPhotonDirections(kdtree->getChild2(),current,count); }
+      if (kdtree->getChild1()) packPhotonDirections(kdtree->getChild1(),current,count);
+      if (kdtree->getChild2()) packPhotonDirections(kdtree->getChild2(),current,count);
   } else {
-    for (unsigned int i = 0; i < kdtree->getPhotons().size(); i++) {
+    for (std::size_t i{}; i < kdtree->getPhotons().size(); i++) {
       const Photon &p = kdtree->getPhotons()[i];
-      Vec3f v = p.getPosition();
-      Vec3f v2 = p.getPosition() - p.getDirectionFrom() * 0.5;
-      Vec3f color = p.getEnergy()*float(GLOBAL_args->mesh_data->num_photons_to_shoot);
-      float width = 0.01;
+      const Vec3f &v = p.getPosition();
+      const Vec3f v2 = p.getPosition() - p.getDirectionFrom() * 0.5;
+      const Vec3f color = p.getEnergy()*float(GLOBAL_args->mesh_data->num_photons_to_shoot);
+      const float width = 0.01f;
       addBox(current,v,v2,color,width);
       count++;
     }
   }
 }
-  
+
 // ======================================================================
 
 void PhotonMapping::packMesh(float* &current, float* &current_points) {
 
   // the photons
-  if (GLOBAL_args->mesh_data->render_photons && kdtree != NULL) {
-    int count = 0;
+  if (GLOBAL_args->mesh_data->render_photons && kdtree != nullptr) {
+    std::size_t count{};
     packPhotons(kdtree,current_points,count);
     assert (count == kdtree->numPhotons());
   }
   // photon directions
-  if (GLOBAL_args->mesh_data->render_photon_directions && kdtree != NULL) {
-    int count = 0;
+  if (GLOBAL_args->mesh_data->render_photon_directions && kdtree != nullptr) {
+    std::size_t count{};
     packPhotonDirections(kdtree,current,count);
     assert (count == kdtree->numPhotons());
   }
 
   // the wireframe kdtree
-  if (GLOBAL_args->mesh_data->render_kdtree && kdtree != NULL) {
-    int count = 0;
+  if (GLOBAL_args->mesh_data->render_kdtree && kdtree != nullptr) {
+    std::size_t count{};
     packKDTree(kdtree,current,count);
     assert (count == kdtree->numBoxes());
   }

@@ -10,17 +10,18 @@
 // ================================================================
 // CONSTRUCTOR & DESTRUCTOR
 // ================================================================
-Radiosity::Radiosity(Mesh *m, ArgParser *a) {
-  mesh = m;
-  args = a;
-  num_faces = -1;  
-  formfactors = NULL;
-  area = NULL;
-  undistributed = NULL;
-  absorbed = NULL;
-  radiance = NULL;
-  max_undistributed_patch = -1;
-  total_area = -1;
+Radiosity::Radiosity(Mesh *m, ArgParser *a):
+  mesh{m},
+  args{a},
+  num_faces{-1},
+  formfactors{},
+  area{},
+  undistributed{},
+  absorbed{},
+  radiance{},
+  max_undistributed_patch{-1},
+  total_area{-1}
+{
   Reset();
 }
 
@@ -35,11 +36,11 @@ void Radiosity::Cleanup() {
   delete [] absorbed;
   delete [] radiance;
   num_faces = -1;
-  formfactors = NULL;
-  area = NULL;
-  undistributed = NULL;
-  absorbed = NULL;
-  radiance = NULL;
+  formfactors = nullptr;
+  area = nullptr;
+  undistributed = nullptr;
+  absorbed = nullptr;
+  radiance = nullptr;
   max_undistributed_patch = -1;
   total_area = -1;
 }
@@ -62,7 +63,7 @@ void Radiosity::Reset() {
     setArea(i,f->getArea());
     Vec3f emit = f->getMaterial()->getEmittedColor();
     setUndistributed(i,emit);
-    setAbsorbed(i,Vec3f(0,0,0));
+    setAbsorbed(i,{0,0,0});
     setRadiance(i,emit);
   }
 
@@ -95,7 +96,7 @@ void Radiosity::findMaxUndistributed() {
 
 
 void Radiosity::ComputeFormFactors() {
-  assert (formfactors == NULL);
+  assert (formfactors == nullptr);
   assert (num_faces > 0);
   formfactors = new float[num_faces*num_faces];
 
@@ -112,9 +113,9 @@ void Radiosity::ComputeFormFactors() {
 // ================================================================
 
 float Radiosity::Iterate() {
-  if (formfactors == NULL) 
+  if (formfactors == nullptr) 
     ComputeFormFactors();
-  assert (formfactors != NULL);
+  assert (formfactors != nullptr);
 
 
 
@@ -149,10 +150,10 @@ void CollectFacesWithVertex(Vertex *have, Face *f, std::vector<Face*> &faces) {
     Edge *eb = f->getEdge()->getNext()->getOpposite();
     Edge *ec = f->getEdge()->getNext()->getNext()->getOpposite();
     Edge *ed = f->getEdge()->getNext()->getNext()->getNext()->getOpposite();
-    if (ea != NULL) CollectFacesWithVertex(have,ea->getFace(),faces);
-    if (eb != NULL) CollectFacesWithVertex(have,eb->getFace(),faces);
-    if (ec != NULL) CollectFacesWithVertex(have,ec->getFace(),faces);
-    if (ed != NULL) CollectFacesWithVertex(have,ed->getFace(),faces);
+    if (ea != nullptr) CollectFacesWithVertex(have,ea->getFace(),faces);
+    if (eb != nullptr) CollectFacesWithVertex(have,eb->getFace(),faces);
+    if (ec != nullptr) CollectFacesWithVertex(have,ec->getFace(),faces);
+    if (ed != nullptr) CollectFacesWithVertex(have,ed->getFace(),faces);
   }
 }
 
@@ -166,15 +167,15 @@ Vec3f Radiosity::setupHelperForColor(Face *f, int i, int j) {
     std::vector<Face*> faces;
     CollectFacesWithVertex((*f)[j],f,faces);
     float total = 0;
-    Vec3f color = Vec3f(0,0,0);
-    Vec3f normal = f->computeNormal();
-    for (unsigned int i = 0; i < faces.size(); i++) {
-      Vec3f normal2 = faces[i]->computeNormal();
-      float area = faces[i]->getArea();
+    Vec3f color{0,0,0};
+    const Vec3f normal = f->computeNormal();
+    for (auto fp: faces) {
+      const Vec3f normal2 = fp->computeNormal();
+      float area = fp->getArea();
       if (normal.Dot3(normal2) < 0.5) continue;
       assert (area > 0);
       total += area;
-      color += float(area) * getRadiance(faces[i]->getRadiosityPatchIndex());
+      color += area * getRadiance(fp->getRadiosityPatchIndex());
     }
     assert (total > 0);
     color /= total;
@@ -188,10 +189,10 @@ Vec3f Radiosity::setupHelperForColor(Face *f, int i, int j) {
   } else if (args->mesh_data->render_mode == RENDER_RADIANCE) {
     return getRadiance(i);
   } else if (args->mesh_data->render_mode == RENDER_FORM_FACTORS) {
-    if (formfactors == NULL) ComputeFormFactors();
+    if (formfactors == nullptr) ComputeFormFactors();
     float scale = 0.2 * total_area/getArea(i);
     float factor = scale * getFormFactor(max_undistributed_patch,i);
-    return Vec3f(factor,factor,factor);
+    return {factor,factor,factor};
   } else {
     assert(0);
   }
@@ -200,7 +201,7 @@ Vec3f Radiosity::setupHelperForColor(Face *f, int i, int j) {
 
 // =======================================================================================
 
-int Radiosity::triCount() {
+std::size_t Radiosity::triCount() const {
   return 12*num_faces;
 }
 
@@ -208,37 +209,34 @@ void Radiosity::packMesh(float* &current) {
   
   for (int i = 0; i < num_faces; i++) {
     Face *f = mesh->getFace(i);
-    Vec3f normal = f->computeNormal();
-
+    const Vec3f normal = f->computeNormal();
     //double avg_s = 0;
     //double avg_t = 0;
 
     // wireframe is normally black, except when it's the special
     // patch, then the wireframe is red
-    Vec3f wireframe_color(0,0,0);
-    if (args->mesh_data->render_mode == RENDER_FORM_FACTORS && i == max_undistributed_patch) {
-      wireframe_color = Vec3f(1,0,0);
-    }
+    const Vec3f wireframe_color{
+      1. * (args->mesh_data->render_mode == RENDER_FORM_FACTORS && i == max_undistributed_patch), 0, 0};
 
     // 4 corner vertices
-    Vec3f a_pos = ((*f)[0])->get();
+    const Vec3f &a_pos = ((*f)[0])->get();
     Vec3f a_color = setupHelperForColor(f,i,0);
-    a_color = Vec3f(linear_to_srgb(a_color.r()),linear_to_srgb(a_color.g()),linear_to_srgb(a_color.b()));
-    Vec3f b_pos = ((*f)[1])->get();
+    a_color = {linear_to_srgb(a_color.r()),linear_to_srgb(a_color.g()),linear_to_srgb(a_color.b())};
+    const Vec3f &b_pos = ((*f)[1])->get();
     Vec3f b_color = setupHelperForColor(f,i,1);
-    b_color = Vec3f(linear_to_srgb(b_color.r()),linear_to_srgb(b_color.g()),linear_to_srgb(b_color.b()));
-    Vec3f c_pos = ((*f)[2])->get();
+    b_color = {linear_to_srgb(b_color.r()),linear_to_srgb(b_color.g()),linear_to_srgb(b_color.b())};
+    const Vec3f &c_pos = ((*f)[2])->get();
     Vec3f c_color = setupHelperForColor(f,i,2);
-    c_color = Vec3f(linear_to_srgb(c_color.r()),linear_to_srgb(c_color.g()),linear_to_srgb(c_color.b()));
-    Vec3f d_pos = ((*f)[3])->get();
+    c_color = {linear_to_srgb(c_color.r()),linear_to_srgb(c_color.g()),linear_to_srgb(c_color.b())};
+    const Vec3f &d_pos = ((*f)[3])->get();
     Vec3f d_color = setupHelperForColor(f,i,3);
-    d_color = Vec3f(linear_to_srgb(d_color.r()),linear_to_srgb(d_color.g()),linear_to_srgb(d_color.b()));
+    d_color = {linear_to_srgb(d_color.r()),linear_to_srgb(d_color.g()),linear_to_srgb(d_color.b())};
 
-    Vec3f avg_color = 0.25f * (a_color+b_color+c_color+d_color);
-    
+    const Vec3f avg_color = 0.25f * (a_color+b_color+c_color+d_color);
+
     // the centroid (for wireframe rendering)
-    Vec3f centroid = f->computeCentroid();
-    
+    const Vec3f centroid = f->computeCentroid();
+
     AddWireFrameTriangle(current,
                          a_pos,b_pos,centroid,
                          normal,normal,normal,

@@ -9,7 +9,7 @@
 Material::~Material() {
   if (hasTextureMap()) {
     //glDeleteTextures(1,&texture_id);
-    assert (image != NULL);
+    assert (image != nullptr);
     delete image;
   }
 }
@@ -17,10 +17,10 @@ Material::~Material() {
 // ==================================================================
 // TEXTURE LOOKUP FOR DIFFUSE COLOR
 // ==================================================================
-const Vec3f Material::getDiffuseColor(float s, float t) const {
+Vec3f Material::getDiffuseColor(float s, float t) const {
   if (!hasTextureMap()) return diffuseColor; 
 
-  assert (image != NULL);
+  assert (image != nullptr);
 
   // this is just using nearest neighbor and could be improved to
   // bilinear interpolation, etc.
@@ -34,11 +34,11 @@ const Vec3f Material::getDiffuseColor(float s, float t) const {
 
   // we assume the texture is stored in sRGB and convert to linear for
   // computation.  It will be converted back to sRGB before display.
-  float r = srgb_to_linear(c.r/255.0);
-  float g = srgb_to_linear(c.g/255.0);
-  float b = srgb_to_linear(c.b/255.0);
+  const float r = srgb_to_linear(c.r/255.0);
+  const float g = srgb_to_linear(c.g/255.0);
+  const float b = srgb_to_linear(c.b/255.0);
 
-  return Vec3f(r,g,b);
+  return {r,g,b};
 }
 
 /*
@@ -95,10 +95,10 @@ void Material::ComputeAverageTextureColor() {
     }
   }
   int count = image->Width() * image->Height();
-  r /= float(count);
-  g /= float(count);
-  b /= float(count);
-  diffuseColor = Vec3f(r,g,b);
+  r /= count;
+  g /= count;
+  b /= count;
+  diffuseColor = {r,g,b};
 }
 
 // ==================================================================
@@ -112,11 +112,11 @@ Vec3f Material::Shade(const Ray &ray, const Hit &hit,
                       const Vec3f &dirToLight, 
                       const Vec3f &lightColor) const {
   
-  Vec3f n = hit.getNormal();
+  const Vec3f &n = hit.getNormal();
   Vec3f e = ray.getDirection()*-1.0f;
   Vec3f l = dirToLight;
-  
-  Vec3f answer = Vec3f(0,0,0);
+
+  Vec3f answer{};
 
   // emitted component
   // -----------------

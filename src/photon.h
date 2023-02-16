@@ -14,10 +14,10 @@ class Photon {
     position(p),direction_from(d),energy(e),bounce(b) {}
 
   // ACCESSORS
-  const Vec3f& getPosition() const { return position; }
-  const Vec3f& getDirectionFrom() const { return direction_from; }
-  const Vec3f& getEnergy() const { return energy; }
-  int whichBounce() const { return bounce; }
+  [[nodiscard]] const Vec3f& getPosition() const { return position; }
+  [[nodiscard]] const Vec3f& getDirectionFrom() const { return direction_from; }
+  [[nodiscard]] const Vec3f& getEnergy() const { return energy; }
+  [[nodiscard]] int whichBounce() const { return bounce; }
 
  private:
   // REPRESENTATION

@@ -70,7 +70,7 @@ void Camera::truckCamera(float dx, float dy) {
 // ====================================================================
 
 // adjust this number if desired
-#define ROTATE_SPEED 0.2
+constexpr auto ROTATE_SPEED{0.2};
 
 
 float convertToRadians(float d) { return d * M_PI / 180.0; }
@@ -100,7 +100,7 @@ void Camera::rotateCamera(float rx, float ry) {
   m *= Matrix::MakeTranslation(-point_of_interest); 
   Vec4f tmp(camera_position.x(),camera_position.y(),camera_position.z(),1);
   tmp = m * tmp;
-  camera_position = Vec3f(tmp.x(),tmp.y(),tmp.z());
+  camera_position = {tmp.x(),tmp.y(),tmp.z()};
 }
 
 // ====================================================================
@@ -114,7 +114,7 @@ Ray OrthographicCamera::generateRay(double x, double y) {
   Vec3f yAxis = getScreenUp() * size; 
   Vec3f lowerLeft = screenCenter - 0.5f*xAxis - 0.5f*yAxis;
   Vec3f screenPoint = lowerLeft + float(x)*xAxis + float(y)*yAxis;
-  return Ray(screenPoint,getDirection());
+  return {screenPoint,getDirection()};
 }
 
 Ray PerspectiveCamera::generateRay(double x, double y) {
@@ -131,7 +131,7 @@ Ray PerspectiveCamera::generateRay(double x, double y) {
   Vec3f screenPoint = lowerLeft + float(x)*xAxis + float(y)*yAxis;
   Vec3f dir = screenPoint - camera_position;
   dir.Normalize();
-  return Ray(camera_position,dir); 
+  return {camera_position,dir};
 } 
 
 // ====================================================================
@@ -139,11 +139,9 @@ Ray PerspectiveCamera::generateRay(double x, double y) {
 
 std::ostream& operator<<(std::ostream &ostr, const Camera &c) {
   const Camera* cp = &c;
-  if (dynamic_cast<const OrthographicCamera*>(cp)) {
-    const OrthographicCamera* ocp = (const OrthographicCamera*)cp;
+  if (auto ocp = dynamic_cast<const OrthographicCamera*>(cp)) {
     ostr << *ocp << std::endl;
-  } else if (dynamic_cast<const PerspectiveCamera*>(cp)) {
-    const PerspectiveCamera* pcp = (const PerspectiveCamera*)cp;
+  } else if (auto pcp = dynamic_cast<const PerspectiveCamera*>(cp)) {
     ostr << *pcp << std::endl;
   }
   return ostr;

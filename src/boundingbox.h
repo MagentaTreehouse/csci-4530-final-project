@@ -5,9 +5,6 @@
 #include <algorithm>
 #include "vectors.h"
 
-// Because getting std::max & std::min to work on all platforms is annoying
-inline double mymax(double x, double y) { if (x > y) return x; return y; }
-inline double mymin(double x, double y) { if (x < y) return x; return y; }
 
 // ====================================================================
 // ====================================================================
@@ -19,7 +16,7 @@ public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
   BoundingBox() { 
-    Set(Vec3f(0,0,0),Vec3f(0,0,0)); }
+    Set({0,0,0},{0,0,0}); }
   BoundingBox(const Vec3f &pt) {
     Set(pt,pt); }
   BoundingBox(const Vec3f &_minimum, const Vec3f &_maximum) { 
@@ -42,7 +39,7 @@ public:
     double x = maximum.x() - minimum.x();
     double y = maximum.y() - minimum.y();
     double z = maximum.z() - minimum.z();
-    return mymax(x,mymax(y,z));
+    return std::max({x, y, z});
   }
 
   // =========
@@ -57,12 +54,16 @@ public:
     minimum = _minimum;
     maximum = _maximum; }
   void Extend(const Vec3f v) {
-    minimum = Vec3f(mymin(minimum.x(),v.x()),
-                    mymin(minimum.y(),v.y()),
-                    mymin(minimum.z(),v.z()));
-    maximum = Vec3f(mymax(maximum.x(),v.x()),
-                    mymax(maximum.y(),v.y()),
-                    mymax(maximum.z(),v.z())); 
+    minimum = {
+      std::min(minimum.x(),v.x()),
+      std::min(minimum.y(),v.y()),
+      std::min(minimum.z(),v.z())
+    };
+    maximum = {
+      std::max(maximum.x(),v.x()),
+      std::max(maximum.y(),v.y()),
+      std::max(maximum.z(),v.z())
+    };
   }
   void Extend(const BoundingBox &bb) {
     Extend(bb.minimum);

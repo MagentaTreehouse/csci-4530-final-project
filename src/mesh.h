@@ -11,8 +11,6 @@ class BoundingBox;
 class Face;
 class Primitive;
 class ArgParser;
-class Ray;
-class Hit;
 class Camera;
 
 enum FACE_TYPE { FACE_TYPE_ORIGINAL, FACE_TYPE_RASTERIZED, FACE_TYPE_SUBDIVIDED };
@@ -30,58 +28,58 @@ public:
 
   // ===============================
   // CONSTRUCTOR & DESTRUCTOR & LOAD
-  Mesh() { bbox = NULL; }
+  Mesh(): bbox{} {}
   virtual ~Mesh();
   void Load(ArgParser *_args);
-    
+
   // ========
   // VERTICES
-  int numVertices() const { return vertices.size(); }
+  [[nodiscard]] int numVertices() const { return vertices.size(); }
   Vertex* addVertex(const Vec3f &pos);
   // look up vertex by index from original .obj file
-  Vertex* getVertex(int i) const {
+  [[nodiscard]] Vertex* getVertex(int i) const {
     assert (i >= 0 && i < numVertices());
     return vertices[i]; }
   // this creates a relationship between 3 vertices (2 parents, 1 child)
   void setParentsChild(Vertex *p1, Vertex *p2, Vertex *child);
   // this accessor will find a child vertex (if it exists) when given
   // two parent vertices
-  Vertex* getChildVertex(Vertex *p1, Vertex *p2) const;
+  [[nodiscard]] Vertex* getChildVertex(Vertex *p1, Vertex *p2) const;
 
   // =====
   // EDGES
-  int numEdges() const { return edges.size(); }
+  [[nodiscard]] int numEdges() const { return edges.size(); }
   // this efficiently looks for an edge with the given vertices, using a hash table
-  Edge* getEdge(Vertex *a, Vertex *b) const;
-  const edgeshashtype& getEdges() const { return edges; }
+  [[nodiscard]] Edge* getEdge(Vertex *a, Vertex *b) const;
+  [[nodiscard]] const edgeshashtype& getEdges() const { return edges; }
 
   // =================
   // ACCESS THE LIGHTS
-  std::vector<Face*>& getLights() { return original_lights; }
+  [[nodiscard]] std::vector<Face*>& getLights() { return original_lights; }
 
   // ==================================
   // ACCESS THE QUADS (for ray tracing)
-  int numOriginalQuads() const { return original_quads.size(); }
-  Face* getOriginalQuad(int i) const {
+  [[nodiscard]] int numOriginalQuads() const { return original_quads.size(); }
+  [[nodiscard]] Face* getOriginalQuad(int i) const {
     assert (i < numOriginalQuads());
     return original_quads[i]; }
 
   // =======================================
   // ACCESS THE PRIMITIVES (for ray tracing)
-  int numPrimitives() const { return primitives.size(); }
-  Primitive* getPrimitive(int i) const {
+  [[nodiscard]] int numPrimitives() const { return primitives.size(); }
+  [[nodiscard]] Primitive* getPrimitive(int i) const {
     assert (i >= 0 && i < numPrimitives()); 
     return primitives[i]; }
   // ACCESS THE PRIMITIVES (for radiosity)
-  int numRasterizedPrimitiveFaces() const { return rasterized_primitive_faces.size(); }
-  Face* getRasterizedPrimitiveFace(int i) const {
+  [[nodiscard]] int numRasterizedPrimitiveFaces() const { return rasterized_primitive_faces.size(); }
+  [[nodiscard]] Face* getRasterizedPrimitiveFace(int i) const {
     assert (i >= 0 && i < numRasterizedPrimitiveFaces());
     return rasterized_primitive_faces[i]; }
 
   // ==============================================================
   // ACCESS THE SUBDIVIDED QUADS + RASTERIZED FACES (for radiosity)
-  int numFaces() const { return subdivided_quads.size() + rasterized_primitive_faces.size(); }
-  Face* getFace(int i) const {
+  [[nodiscard]] int numFaces() const { return subdivided_quads.size() + rasterized_primitive_faces.size(); }
+  [[nodiscard]] Face* getFace(int i) const {
     int num_faces = numFaces();
     assert (i >= 0 && i < num_faces);
     if (i < (int)subdivided_quads.size()) return subdivided_quads[i];
@@ -98,7 +96,7 @@ public:
 
   // ===============
   // OTHER ACCESSORS
-  BoundingBox* getBoundingBox() const { return bbox; }
+  [[nodiscard]] BoundingBox* getBoundingBox() const { return bbox; }
 
   // ===============
   // OTHER FUNCTIONS
@@ -121,8 +119,8 @@ private:
   std::vector<Material*> materials;
   Vec3f background_color;
   Camera *camera;
- private:
 
+ private:
   // the bounding box of all rasterized faces in the scene
   BoundingBox *bbox; 
 
@@ -147,7 +145,3 @@ private:
 // ======================================================================
 
 #endif
-
-
-
-

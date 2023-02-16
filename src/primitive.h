@@ -17,10 +17,10 @@ class Primitive {
   virtual ~Primitive() {}
 
   // accessor
-  Material* getMaterial() const { return material; }
+  [[nodiscard]] Material* getMaterial() const { return material; }
 
   // for ray tracing
-  virtual bool intersect(const Ray &r, Hit &h) const = 0;
+  [[nodiscard]] virtual bool intersect(const Ray &r, Hit &h) const = 0;
 
   // for OpenGL rendering & radiosity
   virtual void addRasterizedFaces(Mesh *m, ArgParser *args) = 0;

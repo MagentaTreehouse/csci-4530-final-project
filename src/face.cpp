@@ -31,8 +31,7 @@ Vec3f Face::RandomPoint() const {
   float s = GLOBAL_args->rand(); // random real in [0,1]
   float t = GLOBAL_args->rand(); // random real in [0,1]
 
-  Vec3f answer = s*t*a + s*(1-t)*b + (1-s)*t*d + (1-s)*(1-t)*c;
-  return answer;
+  return s*t*a + s*(1-t)*b + (1-s)*t*d + (1-s)*(1-t)*c;
 }
 
 // =========================================================================
@@ -50,7 +49,7 @@ bool Face::intersect(const Ray &r, Hit &h, bool intersect_backfacing) const {
 bool Face::triangle_intersect(const Ray &r, Hit &h, Vertex *a, Vertex *b, Vertex *c, bool intersect_backfacing) const {
 
   // compute the intersection with the plane of the triangle
-  Hit h2 = Hit(h);
+  Hit h2 = h;
   if (!plane_intersect(r,h2,intersect_backfacing)) return 0;  
 
   // figure out the barycentric coordinates:

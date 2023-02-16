@@ -29,30 +29,30 @@ public:
   void truckCamera(float dx, float dy);
   void rotateCamera(float rx, float ry);
 
-  const Matrix& getViewMatrix() const { return ViewMatrix; }
-  const Matrix& getProjectionMatrix() const { return ProjectionMatrix; }
+  [[nodiscard]] const Matrix& getViewMatrix() const { return ViewMatrix; }
+  [[nodiscard]] const Matrix& getProjectionMatrix() const { return ProjectionMatrix; }
 
-  friend std::ostream& operator<< (std::ostream& ostr, const Camera &c);
-  friend std::istream& operator>> (std::istream& istr, Camera &c);
+  friend std::ostream& operator<<(std::ostream& ostr, const Camera &c);
+  friend std::istream& operator>>(std::istream& istr, Camera &c);
 
 public:
   //protected:
-  Camera() { assert(0); } // don't use
+  Camera() = delete;
 
   // HELPER FUNCTIONS
-  Vec3f getHorizontal() const {
+  [[nodiscard]] Vec3f getHorizontal() const {
     Vec3f answer;
     Vec3f::Cross3(answer,getDirection(),up);
     answer.Normalize();
     return answer;
   }
-  Vec3f getScreenUp() const {
+  [[nodiscard]] Vec3f getScreenUp() const {
     Vec3f answer;
     Vec3f::Cross3(answer,getHorizontal(),getDirection());
     answer.Normalize();
     return answer;
   }
-  Vec3f getDirection() const {
+  [[nodiscard]] Vec3f getDirection() const {
     Vec3f answer = point_of_interest - camera_position;
     answer.Normalize();
     return answer;
@@ -71,10 +71,10 @@ public:
 class OrthographicCamera : public Camera {
 public:
   // CONSTRUCTOR & DESTRUCTOR
-  OrthographicCamera(const Vec3f &c = Vec3f(0,0,1), 
-		     const Vec3f &poi = Vec3f(0,0,0), 
-		     const Vec3f &u = Vec3f(0,1,0),
-		     float s=100);  
+  OrthographicCamera(const Vec3f &c = {0,0,1}, 
+		     const Vec3f &poi = {0,0,0}, 
+		     const Vec3f &u = {0,1,0},
+		     float s = 100);  
 
   // RENDERING
   Ray generateRay(double x, double y);
@@ -83,8 +83,8 @@ public:
   void glPlaceCamera();
   void zoomCamera(float factor);
 
-  friend std::ostream& operator<< (std::ostream& ostr, const OrthographicCamera &c);
-  friend std::istream& operator>> (std::istream& istr, OrthographicCamera &c);
+  friend std::ostream& operator<<(std::ostream& ostr, const OrthographicCamera &c);
+  friend std::istream& operator>>(std::istream& istr, OrthographicCamera &c);
 
 private:
   // REPRESENTATION
@@ -96,9 +96,9 @@ private:
 class PerspectiveCamera : public Camera {
 public:
   // CONSTRUCTOR & DESTRUCTOR
-  PerspectiveCamera(const Vec3f &c = Vec3f(0,0,1), 
-		    const Vec3f &poi = Vec3f(0,0,0), 
-		    const Vec3f &u = Vec3f(0,1,0),
+  PerspectiveCamera(const Vec3f &c = {0,0,1},
+		    const Vec3f &poi = {0,0,0},
+		    const Vec3f &u = {0,1,0},
 		    float a = 45);
 
   // RENDERING
@@ -108,8 +108,8 @@ public:
   void glPlaceCamera();
   void zoomCamera(float dist);
 
-  friend std::ostream& operator<< (std::ostream& ostr, const PerspectiveCamera &c);
-  friend std::istream& operator>> (std::istream& istr, PerspectiveCamera &c);
+  friend std::ostream& operator<<(std::ostream& ostr, const PerspectiveCamera &c);
+  friend std::istream& operator>>(std::istream& istr, PerspectiveCamera &c);
 
 private:
   // REPRESENTATION

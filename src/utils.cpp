@@ -1,9 +1,8 @@
-#include <iostream>
 #include <cstring>
 #include "utils.h"
 
-// ============================================================================================
-// ============================================================================================
+// ==========================================================================================
+// ==========================================================================================
 // Helper function that adds 3 triangles to render wireframe
 
 void AddWireFrameTriangle(float* &current,
@@ -68,8 +67,8 @@ void AddWireFrameTriangle(float* &current,
   memcpy(current, &tc, sizeof(float)*12); current += 12;
 }
 
-// ============================================================================================
-// ============================================================================================
+// ==========================================================================================
+// ==========================================================================================
 // Adds 2 triangles to make a simple quad (no wireframe)
 
 void AddQuad(float* &current,
@@ -96,29 +95,29 @@ void AddQuad(float* &current,
   memcpy(current, &tc, sizeof(float)*12); current += 12;
 }
 
-// ============================================================================================
-// ============================================================================================
+// ==========================================================================================
+// ==========================================================================================
 // Adds 12 triangles to make a simple rectangular box
 
 void AddBox(float* &current,
             const Vec3f pos[8],
             const Vec3f &color) {
 
-  Vec3f normal1 = ComputeNormal(pos[0],pos[1],pos[2]);
-  normal1 = Vec3f(0,0,0);
+  // Vec3f normal1 = ComputeNormal(pos[0],pos[1],pos[2]);
+  Vec3f normal1{0,0,0};
   AddQuad(current,pos[0],pos[1],pos[3],pos[2],normal1,color);
   AddQuad(current,pos[4],pos[6],pos[7],pos[5],-normal1,color);
 
-  Vec3f normal2 = ComputeNormal(pos[0],pos[4],pos[5]);
-  normal2 = Vec3f(0,0,0);
+  // Vec3f normal2 = ComputeNormal(pos[0],pos[4],pos[5]);
+  Vec3f normal2{0,0,0};
   AddQuad(current,pos[0],pos[4],pos[5],pos[1],normal2,color);
   AddQuad(current,pos[2],pos[3],pos[7],pos[6],-normal2,color);
 
-  Vec3f normal3 = ComputeNormal(pos[0],pos[2],pos[6]);
-  normal3 = Vec3f(0,0,0);
+  // Vec3f normal3 = ComputeNormal(pos[0],pos[2],pos[6]);
+  Vec3f normal3{0,0,0};
   AddQuad(current,pos[0],pos[2],pos[6],pos[4],normal3,color);
   AddQuad(current,pos[1],pos[5],pos[7],pos[3],normal3,color);
 }
 
-// ============================================================================================
-// ============================================================================================
+// ==========================================================================================
+// ==========================================================================================

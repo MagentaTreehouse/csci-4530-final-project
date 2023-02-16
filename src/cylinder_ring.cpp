@@ -34,15 +34,15 @@ bool IntersectFiniteCylinder(const Ray &r, const Vec3f &center, float radius, fl
   float t_m = (-B - radical) / (2*A);
   float t_p = (-B + radical) / (2*A);
   assert (t_m <= t_p);
-  Vec3f pt_m = r.pointAtParameter(t_m);
+  const Vec3f pt_m = r.pointAtParameter(t_m);
   t = t_m;
   // select the correct solution, the smallest non-negative solution
   if (t_m < EPSILON ||
       pt_m.y() > center.y() + height/2.0 ||
       pt_m.y() < center.y() - height/2.0) {
     t = t_p;
-  } 
-  Vec3f pt = r.pointAtParameter(t);
+  }
+  const Vec3f pt = r.pointAtParameter(t);
   if (t < EPSILON ||
       pt.y() > center.y() + height/2.0 ||
       pt.y() < center.y() - height/2.0) {
@@ -50,7 +50,7 @@ bool IntersectFiniteCylinder(const Ray &r, const Vec3f &center, float radius, fl
   }
 
   // compute the normal at the interesection point
-  normal = Vec3f(pt.x()-center.x(),0,pt.z()-center.z());
+  normal = {pt.x()-center.x(),0,pt.z()-center.z()};
   normal.Normalize();
   return true;
 }
@@ -72,7 +72,7 @@ bool IntersectAnnulus(const Ray &r, const Vec3f &center, float inner_radius, flo
 		    (pt.z()-center.z())*(pt.z()-center.z()));
   if (test < inner_radius || test > outer_radius) return false;
 
-  normal = Vec3f(0,1,0);
+  normal = {0,1,0};
   return true;
 }
 
@@ -88,10 +88,10 @@ bool CylinderRing::intersect(const Ray &r, Hit &h) const {
   bool inner = IntersectFiniteCylinder(r,center,inner_radius,height,inner_t,inner_normal);
   float top_t;
   Vec3f top_normal;
-  bool top = IntersectAnnulus(r,center+Vec3f(0,height/2.0,0),inner_radius,outer_radius,top_t,top_normal);
+  bool top = IntersectAnnulus(r,center+Vec3f{0,height/2.0,0},inner_radius,outer_radius,top_t,top_normal);
   float bottom_t;
   Vec3f bottom_normal;
-  bool bottom = IntersectAnnulus(r,center-Vec3f(0,height/2.0,0),inner_radius,outer_radius,bottom_t,bottom_normal);
+  bool bottom = IntersectAnnulus(r,center-Vec3f{0,height/2.0,0},inner_radius,outer_radius,bottom_t,bottom_normal);
   bool answer = false;
 
   // return the closest intersection
@@ -122,8 +122,7 @@ Vec3f ComputeCylinderRingPoint(float s, const Vec3f center, float radius, float 
   float angle = 2*M_PI*s;
   float x = radius*cos(angle);
   float z = radius*-sin(angle);
-  Vec3f answer = center + Vec3f(x,height,z);
-  return answer;
+  return center + Vec3f{x,height,z};
 }
 
 void CylinderRing::addRasterizedFaces(Mesh *m, ArgParser *args) {
