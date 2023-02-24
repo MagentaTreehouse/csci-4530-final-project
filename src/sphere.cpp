@@ -7,28 +7,36 @@
 #include "ray.h"
 #include "hit.h"
 
-// ====================================================================
-// ====================================================================
 
-bool Sphere::intersect(const Ray &/*r*/, Hit &/*h*/) const {
+// return true if the sphere was intersected, and update the hit
+// data structure to contain the value of t for the ray at the
+// intersection point, the material, and the normal
+bool Sphere::intersect(const Ray &r, Hit &h) const {
 
   // ==========================================
   // ASSIGNMENT:  IMPLEMENT SPHERE INTERSECTION
   // ==========================================
 
-  // plug the explicit ray equation into the implict sphere equation and solve
+  // Solve for t: at^2 + bt + c = 0
+  const auto &d{r.getDirection()};
+  const auto &co{r.getOrigin() - center};
+  const double
+    a{d.Dot3(d)},
+    b{2 * co.Dot3(d)},
+    c{co.Dot3(co) - radius * radius},
 
+    discrim{b * b - 4 * a * c},
+    rtDiscrim{std::sqrt(discrim)},
+    t_[2]{(-b + rtDiscrim) / (2 * a), (-b - rtDiscrim) / (2 * a)};
 
+  if (const auto tPrev{h.getT()};
+      !((t_[0] > 0) & (t_[1] < tPrev) & ((t_[1] > 0) | (t_[0] < tPrev))))
+    return false;
+  const auto t{t_[t_[1] > 0]};
+  h.set(t, material, r.pointAtParameter(t) - center); /* TODO: Do I need to normalize? */
+  return true;
+}
 
-  // return true if the sphere was intersected, and update the hit
-  // data structure to contain the value of t for the ray at the
-  // intersection point, the material, and the normal
-
-  return false;
-} 
-
-// ====================================================================
-// ====================================================================
 
 // helper function to place a grid of points on the sphere
 Vec3f ComputeSpherePoint(float s, float t, const Vec3f center, float radius) {
