@@ -30,10 +30,10 @@ bool Sphere::intersect(const Ray &r, Hit &h) const {
     t_[2]{(-b + rtDiscrim) / (2 * a), (-b - rtDiscrim) / (2 * a)};
 
   if (const auto tPrev{h.getT()};
-      !((t_[0] > 0) & (t_[1] < tPrev) & ((t_[1] > 0) | (t_[0] < tPrev))))
+      !((t_[0] > EPSILON) & (t_[1] < tPrev) & ((t_[1] > EPSILON) | (t_[0] < tPrev))))
     return false;
-  const auto t{t_[t_[1] > 0]};
-  h.set(t, material, r.pointAtParameter(t) - center); /* TODO: Do I need to normalize? */
+  const auto t{t_[t_[1] > EPSILON]};
+  h.set(t, material, (r.pointAtParameter(t) - center).Normalized());
   return true;
 }
 

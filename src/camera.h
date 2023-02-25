@@ -43,19 +43,15 @@ public:
   [[nodiscard]] Vec3f getHorizontal() const {
     Vec3f answer;
     Vec3f::Cross3(answer,getDirection(),up);
-    answer.Normalize();
-    return answer;
+    return answer.Normalized();
   }
   [[nodiscard]] Vec3f getScreenUp() const {
     Vec3f answer;
     Vec3f::Cross3(answer,getHorizontal(),getDirection());
-    answer.Normalize();
-    return answer;
+    return answer.Normalized();
   }
   [[nodiscard]] Vec3f getDirection() const {
-    Vec3f answer = point_of_interest - camera_position;
-    answer.Normalize();
-    return answer;
+    return (point_of_interest - camera_position).Normalized();
   }
 
   // REPRESENTATION

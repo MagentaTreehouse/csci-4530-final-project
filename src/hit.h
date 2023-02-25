@@ -5,7 +5,6 @@
 #include <ostream>
 #include <limits>
 
-#include "ray.h"
 
 class Material;
 

@@ -50,8 +50,7 @@ bool IntersectFiniteCylinder(const Ray &r, const Vec3f &center, float radius, fl
   }
 
   // compute the normal at the interesection point
-  normal = {pt.x()-center.x(),0,pt.z()-center.z()};
-  normal.Normalize();
+  normal = Vec3f{pt.x()-center.x(),0,pt.z()-center.z()}.Normalized();
   return true;
 }
 

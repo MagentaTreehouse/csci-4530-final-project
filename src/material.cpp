@@ -135,8 +135,7 @@ Vec3f Material::Shade(const Ray &ray, const Hit &hit,
   float exponent = 100;
 
   // compute ideal reflection angle
-  Vec3f r = (l*-1.0f) + n * (2 * dot_nl);
-  r.Normalize();
+  const Vec3f r = ((l*-1.0f) + n * (2 * dot_nl)).Normalized();
   float dot_er = e.Dot3(r);
   if (dot_er < 0) dot_er = 0;
   answer += lightColor*specularColor*float(pow(dot_er,exponent))* dot_nl;

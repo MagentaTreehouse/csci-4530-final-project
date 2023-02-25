@@ -105,9 +105,7 @@ inline Vec3f MirrorDirection(const Vec3f &normal, const Vec3f &incoming) {
 // compute a random diffuse direction
 // (not the same as a uniform random direction on the hemisphere)
 inline Vec3f RandomDiffuseDirection(const Vec3f &normal) {
-  Vec3f answer = normal+RandomUnitVector();
-  answer.Normalize();
-  return answer;
+  return (normal+RandomUnitVector()).Normalized();
 }
 
 void AddWireFrameTriangle(float* &current,

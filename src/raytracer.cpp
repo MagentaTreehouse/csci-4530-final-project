@@ -41,10 +41,9 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int /*bounce_count*/) const 
 
   // First cast a ray and see if we hit anything.
   hit = {};
-  bool intersect = CastRay(ray,hit,false);
 
   // if there is no intersection, simply return the background color
-  if (!intersect) {
+  if (!CastRay(ray,hit,false)) {
     return {
       srgb_to_linear(mesh->background_color.r()),
       srgb_to_linear(mesh->background_color.g()),
@@ -62,8 +61,8 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int /*bounce_count*/) const 
   } 
  
   
-  Vec3f normal = hit.getNormal();
-  Vec3f point = ray.pointAtParameter(hit.getT());
+  const Vec3f &normal = hit.getNormal();
+  const Vec3f point = ray.pointAtParameter(hit.getT());
 
   Vec3f ambient_light{
     args->mesh_data->ambient_light.data[0],
@@ -72,36 +71,35 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int /*bounce_count*/) const 
   };
 
   // ----------------------------------------------
-  //  start with the indirect light (ambient light)
+  // start with the indirect light (ambient light)
   const Vec3f diffuse_color = m->getDiffuseColor(hit.get_s(),hit.get_t());
   Vec3f answer = args->mesh_data->gather_indirect?
     diffuse_color * (photon_mapping->GatherIndirect(point, normal, ray.getDirection()) + ambient_light) : // photon mapping for more accurate indirect light
     diffuse_color * ambient_light; // the usual ray tracing hack for indirect light
 
   // ----------------------------------------------
-  // add contributions from each light that is not in shadow
-  int num_lights = mesh->getLights().size();
-  for (int i = 0; i < num_lights; i++) {
+  // direct illumination
+  for (const Face *f: mesh->getLights()) {
 
-    Face *f = mesh->getLights()[i];
-    Vec3f lightColor = f->getMaterial()->getEmittedColor() * f->getArea();
+    const Vec3f lightColor = f->getMaterial()->getEmittedColor() * f->getArea();
     Vec3f myLightColor;
-    Vec3f lightCentroid = f->computeCentroid();
-    Vec3f dirToLightCentroid = lightCentroid-point;
-    dirToLightCentroid.Normalize();
+    const Vec3f lightCentroid = f->computeCentroid();
+    const Vec3f ptLtC = lightCentroid-point;
+    const Vec3f dirToLightCentroid = ptLtC.Normalized();
 
     // ===========================================
     // ASSIGNMENT:  ADD SHADOW & SOFT SHADOW LOGIC
     // ===========================================
 
-
-    const float distToLightCentroid = (lightCentroid-point).Length();
+    const float distToLightCentroid = ptLtC.Length();
     myLightColor = 1 / float (M_PI*distToLightCentroid*distToLightCentroid) * lightColor;
 
-    
-    // add the lighting contribution from this particular light at this point
-    // (fix this to check for blockers between the light & this surface)
-    answer += m->Shade(ray,hit,dirToLightCentroid,myLightColor);
+    Hit block{};
+    CastRay({point, ptLtC}, block, false);
+    if (block.getT() > 1 - EPSILON)
+      // add the lighting contribution from this particular light at this point
+      // (fix this to check for blockers between the light & this surface)
+      answer += m->Shade(ray,hit,dirToLightCentroid,myLightColor);
   }
 
   // ----------------------------------------------
@@ -240,14 +238,12 @@ std::size_t RayTracer::triCount() const {
 }
 
 void RayTracer::packMesh(float* &current) {
-  for (std::size_t i = 0; i < pixels_a.size(); i++) {
-    Pixel &p = pixels_a[i];
+  for (const auto &p: pixels_a) {
     Vec3f v1 = p.v1;
     Vec3f v2 = p.v2;
     Vec3f v3 = p.v3;
     Vec3f v4 = p.v4;
-    Vec3f normal = ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4);
-    normal.Normalize();
+    Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
     if (render_to_a) {
       v1 += 0.02*normal;
       v2 += 0.02*normal;
@@ -263,8 +259,7 @@ void RayTracer::packMesh(float* &current) {
     Vec3f v2 = p.v2;
     Vec3f v3 = p.v3;
     Vec3f v4 = p.v4;
-    Vec3f normal = ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4);
-    normal.Normalize();
+    Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
     if (!render_to_a) {
       v1 += 0.02*normal;
       v2 += 0.02*normal;

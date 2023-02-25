@@ -31,8 +31,8 @@ void AddWireFrameTriangle(float* &current,
   Vec3f ypos = (1-frac)*bpos + frac*cpos;
   Vec3f xcolor = (1-frac)*acolor + frac*ccolor;
   Vec3f ycolor = (1-frac)*bcolor + frac*ccolor;
-  Vec3f xnormal = (1-frac)*anormal + frac*cnormal; xnormal.Normalize();
-  Vec3f ynormal = (1-frac)*bnormal + frac*cnormal; ynormal.Normalize();
+  Vec3f xnormal = ((1-frac)*anormal + frac*cnormal).Normalized();
+  Vec3f ynormal = ((1-frac)*bnormal + frac*cnormal).Normalized();
 
   float12 ta;
   float12 tb;

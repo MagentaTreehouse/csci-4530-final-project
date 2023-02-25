@@ -8,12 +8,11 @@
 // CONSTRUCTORS
 // ====================================================================
 
-Camera::Camera(const Vec3f &c, const Vec3f &poi, const Vec3f &u) {
-  camera_position = c;
-  point_of_interest = poi;
-  up = u;
-  up.Normalize();
-}
+Camera::Camera(const Vec3f &c, const Vec3f &poi, const Vec3f &u):
+  point_of_interest{poi},
+  camera_position{c},
+  up{u.Normalized()}
+{}
 
 OrthographicCamera::OrthographicCamera
 (const Vec3f &c, const Vec3f &poi, const Vec3f &u, float s) 
@@ -129,8 +128,7 @@ Ray PerspectiveCamera::generateRay(double x, double y) {
   Vec3f yAxis = getScreenUp() * screenHeight;
   Vec3f lowerLeft = screenCenter - 0.5f*xAxis - 0.5f*yAxis;
   Vec3f screenPoint = lowerLeft + float(x)*xAxis + float(y)*yAxis;
-  Vec3f dir = screenPoint - camera_position;
-  dir.Normalize();
+  const Vec3f dir = (screenPoint - camera_position).Normalized();
   return {camera_position,dir};
 } 
 
