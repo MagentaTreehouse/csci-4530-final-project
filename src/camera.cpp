@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "camera.h"
+#include "meshdata.h"
 #include "ray.h"
 #include "utils.h"
 
@@ -31,8 +32,7 @@ PerspectiveCamera::PerspectiveCamera
 // ====================================================================
 
 void Camera::dollyCamera(float dist) {
-  Vec3f diff = camera_position - point_of_interest;
-  float d = diff.Length();
+  float d = DistanceBetweenTwoPoints(camera_position, point_of_interest);
   Vec3f translate = float(0.004*d*dist)*getDirection();
   camera_position += translate;
 }
@@ -106,7 +106,7 @@ void Camera::rotateCamera(float rx, float ry) {
 // ====================================================================
 // GENERATE RAY
 
-Ray OrthographicCamera::generateRay(double x, double y) {
+Ray OrthographicCamera::generateRay(double x, double y) const {
   std::cout << "gr o" << std::endl;
   Vec3f screenCenter = camera_position;
   Vec3f xAxis = getHorizontal() * size; 
@@ -116,12 +116,12 @@ Ray OrthographicCamera::generateRay(double x, double y) {
   return {screenPoint,getDirection()};
 }
 
-Ray PerspectiveCamera::generateRay(double x, double y) {
+Ray PerspectiveCamera::generateRay(double x, double y) const {
   int width = GLOBAL_args->mesh_data->width;
   int height = GLOBAL_args->mesh_data->height;
   Vec3f screenCenter = camera_position + getDirection();
   float radians_angle = angle * M_PI / 180.0f;
-  float screenHeight = 2 * tan(radians_angle/2.0);
+  float screenHeight = 2 * tan(radians_angle/2);
   float aspect = std::max(height/float(width),width/float(height));
   screenHeight *= aspect;
   Vec3f xAxis = getHorizontal() * screenHeight;
@@ -130,7 +130,7 @@ Ray PerspectiveCamera::generateRay(double x, double y) {
   Vec3f screenPoint = lowerLeft + float(x)*xAxis + float(y)*yAxis;
   const Vec3f dir = (screenPoint - camera_position).Normalized();
   return {camera_position,dir};
-} 
+}
 
 // ====================================================================
 // ====================================================================

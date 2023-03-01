@@ -1,28 +1,21 @@
 #ifndef _MESH_DATA_H_
 #define _MESH_DATA_H_
 
+#include <array>
 // ====================================================================
 // ====================================================================
 
 // a homogeneous 3D point or a color with alpha
-typedef struct float3 {
-  float data[3];
-} float3;
+using float3 = std::array<float, 3U>;
 
 // a homogenous 3D point or a color with alpha
-typedef struct float4 {
-  float data[4];
-} float4;
+using float4 = std::array<float, 4U>;
 
 // a vertex with position, normal, and color
-typedef struct float12 {
-  float data[12];
-} float12;
+using float12 = std::array<float, 12U>;
 
 // a 4x4 matrix
-typedef struct float16 {
-  float data[16];
-} float16;
+using float16 = std::array<float, 16U>;
 
 
 // VISUALIZATION MODES FOR RADIOSITY

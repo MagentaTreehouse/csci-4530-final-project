@@ -80,8 +80,7 @@ public:
   // ACCESS THE SUBDIVIDED QUADS + RASTERIZED FACES (for radiosity)
   [[nodiscard]] int numFaces() const { return subdivided_quads.size() + rasterized_primitive_faces.size(); }
   [[nodiscard]] Face* getFace(int i) const {
-    int num_faces = numFaces();
-    assert (i >= 0 && i < num_faces);
+    assert (i >= 0 && i < numFaces());
     if (i < (int)subdivided_quads.size()) return subdivided_quads[i];
     else return getRasterizedPrimitiveFace(i-subdivided_quads.size()); }
 

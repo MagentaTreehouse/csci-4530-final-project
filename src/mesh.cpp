@@ -3,6 +3,8 @@
 #include <cassert>
 #include <string>
 #include <utility>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "argparser.h"
 #include "vertex.h"
@@ -13,8 +15,6 @@
 #include "primitive.h"
 #include "sphere.h"
 #include "cylinder_ring.h"
-#include "ray.h"
-#include "hit.h"
 #include "camera.h"
 
 

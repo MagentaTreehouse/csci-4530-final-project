@@ -4,6 +4,7 @@
 #include "sphere.h"
 #include "vertex.h"
 #include "mesh.h"
+#include "meshdata.h"
 #include "ray.h"
 #include "hit.h"
 
@@ -39,7 +40,7 @@ bool Sphere::intersect(const Ray &r, Hit &h) const {
 
 
 // helper function to place a grid of points on the sphere
-Vec3f ComputeSpherePoint(float s, float t, const Vec3f center, float radius) {
+Vec3f ComputeSpherePoint(float s, float t, const Vec3f &center, float radius) {
   float angle = 2*M_PI*s;
   float y = -cos(M_PI*t);
   float factor = sqrt(1-y*y);

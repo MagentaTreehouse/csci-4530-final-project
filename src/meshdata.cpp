@@ -1,14 +1,6 @@
 #include <string.h>
-#include <string.h>
-#include <cassert>
-#include <iostream>
-#include <fstream>
-#include <random>
 
-#include "matrix.h"
 #include "mesh.h"
-#include "meshdata.h"
-#include "argparser.h"
 #include "raytracer.h"
 #include "raytree.h"
 #include "radiosity.h"
@@ -61,7 +53,7 @@ extern "C" {
   void PhotonMappingClear() {
     GLOBAL_args->photon_mapping->Clear();
   }
-  
+
   void PackMesh() {
     packMesh(GLOBAL_args->mesh_data, GLOBAL_args->raytracer, GLOBAL_args->radiosity, GLOBAL_args->photon_mapping);
   }

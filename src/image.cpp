@@ -1,15 +1,16 @@
 #include <cstring>
+#include <iostream>
 #include "image.h"
 
 
 // ====================================================================================
-bool Image::Save(const std::string &filename) const {
+bool Image::Save(std::string_view filename) const {
   int len = filename.length();
-  if (!(len > 4 && filename.substr(len-4) == std::string(".ppm"))) {
+  if (!(len > 4 && filename.substr(len-4) == ".ppm")) {
     std::cerr << "ERROR: This is not a PPM filename: " << filename << std::endl;
     return false;
   }
-  FILE *file = fopen(filename.c_str(), "wb");
+  FILE *file = fopen(filename.data(), "wb");
   if (file == nullptr) {
     std::cerr << "Unable to open " << filename << " for writing\n";
     return false;
@@ -35,13 +36,13 @@ bool Image::Save(const std::string &filename) const {
 }
 
 // ====================================================================================
-bool Image::Load(const std::string &filename) {
+bool Image::Load(std::string_view filename) {
   int len = filename.length();
-  if (!(len > 4 && filename.substr(len-4) == std::string(".ppm"))) {
+  if (!(len > 4 && filename.substr(len-4) == ".ppm")) {
     std::cerr << "ERROR: This is not a PPM filename: " << filename << std::endl;
     return false;
   }
-  FILE *file = fopen(filename.c_str(),"rb");
+  FILE *file = fopen(filename.data(),"rb");
   if (file == nullptr) {
     std::cerr << "Unable to open " << filename << " for reading\n";
     return false;
@@ -79,7 +80,7 @@ unsigned char* Image::getGLPixelData() {
   gl_data = new unsigned char[width*height*3];
   for (int x=0; x<width; x++) {
     for (int y=0; y<height; y++) { 
-      Color v = GetPixel(x,y);
+      const Color &v = GetPixel(x,y);
       gl_data[y*width*3+x*3+0] = v.r;
       gl_data[y*width*3+x*3+1] = v.g;
       gl_data[y*width*3+x*3+2] = v.b;
@@ -90,4 +91,3 @@ unsigned char* Image::getGLPixelData() {
 
 // ====================================================================
 // ====================================================================
-

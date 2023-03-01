@@ -6,6 +6,7 @@
 #include "material.h"
 #include "cylinder_ring.h"
 #include "mesh.h"
+#include "meshdata.h"
 #include "ray.h"
 #include "hit.h"
 

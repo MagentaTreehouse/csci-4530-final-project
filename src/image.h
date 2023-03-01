@@ -2,8 +2,7 @@
 #define _IMAGE_H_
 
 #include <cassert>
-#include <string>
-#include <iostream>
+#include <string_view>
 
 // ====================================================================
 // 24 bit color
@@ -22,7 +21,7 @@ class Image {
 public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  Image(const std::string &filename = ""): width{}, height{}, data{}, gl_data{}
+  Image(std::string_view filename = ""): width{}, height{}, data{}, gl_data{}
   {
     if (filename != "") Load(filename); 
   }
@@ -52,7 +51,7 @@ public:
     return *this; }
 
   void copy_helper(const Image &image) {
-    Allocate (image.Width(), image.Height());
+    Allocate(image.Width(), image.Height());
     for (int i = 0; i < image.Width(); i++) {
       for (int j = 0; j < image.Height(); j++) {
         this->SetPixel(i,j,image.GetPixel(i,j));
@@ -62,8 +61,8 @@ public:
 
   // =========
   // ACCESSORS
-  int Width() const { return width; }
-  int Height() const { return height; }
+  [[nodiscard]] int Width() const { return width; }
+  [[nodiscard]] int Height() const { return height; }
   [[nodiscard]] const Color& GetPixel(int x, int y) const {
     assert(x >= 0 && x < width);
     assert(y >= 0 && y < height);
@@ -83,8 +82,8 @@ public:
 
   // ===========
   // LOAD & SAVE
-  bool Load(const std::string &filename);
-  bool Save(const std::string &filename) const; 
+  bool Load(std::string_view filename);
+  bool Save(std::string_view filename) const; 
 
 private:
   // ==============

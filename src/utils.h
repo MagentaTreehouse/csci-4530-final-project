@@ -1,9 +1,7 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
-#include <vector>
 #include "vectors.h"
-#include "meshdata.h"
 #include "argparser.h"
 
 // ======================================================================
@@ -47,7 +45,7 @@ inline float srgb_to_linear(float x) {
 
 // =========================================================================
 // utility functions 
-inline float DistanceBetweenTwoPoints(const Vec3f &p1, const Vec3f &p2) {
+constexpr float DistanceBetweenTwoPoints(const Vec3f &p1, const Vec3f &p2) {
   return (p1-p2).Length();
 }
 
@@ -96,10 +94,8 @@ inline Vec3f RandomUnitVector() {
 }
 
 // compute the perfect mirror direction
-inline Vec3f MirrorDirection(const Vec3f &normal, const Vec3f &incoming) {
-  float dot = incoming.Dot3(normal);
-  Vec3f r = (incoming*-1.0f) + normal * (2 * dot);
-  return r*-1.0f;
+constexpr Vec3f Reflection(const Vec3f &incoming, const Vec3f &normal) {
+  return incoming - incoming.Dot3(normal) * 2 * normal;
 }
 
 // compute a random diffuse direction

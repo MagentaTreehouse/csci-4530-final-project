@@ -20,7 +20,7 @@ public:
   virtual ~Camera() {}
 
   // RENDERING
-  virtual Ray generateRay(double x, double y) = 0;
+  virtual Ray generateRay(double x, double y) const = 0;
 
   // GL NAVIGATION
   virtual void glPlaceCamera() = 0;
@@ -73,7 +73,7 @@ public:
 		     float s = 100);  
 
   // RENDERING
-  Ray generateRay(double x, double y);
+  Ray generateRay(double x, double y) const;
 
   // GL NAVIGATION
   void glPlaceCamera();
@@ -98,7 +98,7 @@ public:
 		    float a = 45);
 
   // RENDERING
-  Ray generateRay(double x, double y);
+  Ray generateRay(double x, double y) const;
 
   // GL NAVIGATION
   void glPlaceCamera();
