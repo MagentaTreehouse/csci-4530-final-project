@@ -50,10 +50,11 @@ void convert(glm::mat4 &a, const Matrix &b) {
 
 void Animate() {
   if (GLOBAL_args->mesh_data->raytracing_animation) {
-    // draw 100 pixels and then refresh the screen and handle any user input
-    for (int i = 0; i < 100; i++) {
+    // draw 256 pixels and then refresh the screen and handle any user input
+    for (int i = 0; i < 256; i++) {
       if (!DrawPixel()) {
         GLOBAL_args->mesh_data->raytracing_animation = false;
+        std::cout << "Render complete." << std::endl;
         break;
       }
     }

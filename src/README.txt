@@ -1,6 +1,6 @@
 HOMEWORK 3: RAY TRACING, RADIOSITY, & PHOTON MAPPING
 
-NAME:  < insert name >
+NAME:  Mingyi Chen
 
 
 
@@ -13,7 +13,8 @@ talked to about this assignment and all of the resources (books,
 online reference material, etc.) you consulted in completing this
 assignment.
 
-< insert collaborators / resources >
+C++ reference
+Fundamentals of Computer Graphics, 5th Edition (Steve Marschner, Peter Shirley)
 
 Remember: Your implementation for this assignment must be done on your
 own, as described in "Academic Integrity for Homework" handout.
