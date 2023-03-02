@@ -75,21 +75,21 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
     return {1,1,1};
   } 
 
-
+  const auto &md{*args->mesh_data};
   const Vec3f &d{ray.getDirection()};
   const Vec3f &normal{hit.getNormal()};
   const Vec3f point{ray.pointAtParameter(hit.getT())};
 
   const Vec3f ambient_light{
-    args->mesh_data->ambient_light[0],
-    args->mesh_data->ambient_light[1],
-    args->mesh_data->ambient_light[2]
+    md.ambient_light[0],
+    md.ambient_light[1],
+    md.ambient_light[2]
   };
 
   // ----------------------------------------------
   // start with the indirect light (ambient light)
   const Vec3f diffuse_color = m->getDiffuseColor(hit.get_s(),hit.get_t());
-  Vec3f answer = args->mesh_data->gather_indirect?
+  Vec3f answer = md.gather_indirect?
     diffuse_color * (photon_mapping->GatherIndirect(point, normal, d) + ambient_light) : // photon mapping for more accurate indirect light
     diffuse_color * ambient_light; // the usual ray tracing hack for indirect light
 
@@ -109,13 +109,17 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
 
     const float distToLightCentroid = ptLtC.Length();
     const Vec3f lightIrradiance = 1 / (float(M_PI)*distToLightCentroid*distToLightCentroid) * lightColor;
-
-    Hit block{};
-    CastRay({point, ptLtC}, block, false);
-    if (block.getT() > 1 - EPSILON)
-      // add the lighting contribution from this particular light at this point
-      // (fix this to check for blockers between the light & this surface)
-      answer += m->Shade(ray,hit,dirToLightCentroid,lightIrradiance);
+    
+    Vec3f directIllum{};
+    for (int i{}; i < md.num_shadow_samples; ++i) {
+      Hit block{};
+      CastRay({point, f->RandomPoint() - point}, block, false);
+      if (block.getT() > 1 - EPSILON)
+        // add the lighting contribution from this particular light at this point
+        // (fix this to check for blockers between the light & this surface)
+        directIllum += m->Shade(ray,hit,dirToLightCentroid,lightIrradiance);
+    }
+    answer += 1. / md.num_shadow_samples * directIllum;
   }
 
   // ----------------------------------------------
