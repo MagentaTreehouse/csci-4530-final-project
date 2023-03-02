@@ -1,4 +1,6 @@
 #include <vector>
+#include <filesystem>
+#include <thread>
 
 #include "OpenGLCanvas.h"
 #include "meshdata.h"
@@ -57,7 +59,7 @@ void OpenGLCanvas::initialize(ArgParser *_args, MeshData *_mesh_data, OpenGLRend
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   // Create a GLFW window
-  window = glfwCreateWindow(mesh_data->width,mesh_data->height, "ACG HW3 RENDERING", NULL, NULL);
+  window = glfwCreateWindow(mesh_data->width,mesh_data->height, windowTitle, NULL, NULL);
   if (!window) {
     std::cerr << "ERROR: Failed to open GLFW window" << std::endl;
     glfwTerminate();
@@ -120,7 +122,7 @@ void OpenGLCanvas::mousebuttonCB(GLFWwindow* /*window*/, int which_button, int a
       middleMousePressed = false;
     }
   }
-}	
+}
 
 // ========================================================
 // Callback function for mouse drag
@@ -136,9 +138,7 @@ void OpenGLCanvas::mousemotionCB(GLFWwindow* /*window*/, double x, double y) {
     } else if (rightMousePressed) {
       GLOBAL_args->mesh->camera->dollyCamera(mouseY-y);
     }
-  }
-
-  if (leftMousePressed || middleMousePressed || rightMousePressed) {
+  } else if (leftMousePressed || middleMousePressed || rightMousePressed) {
     if (shiftKeyPressed) {
       GLOBAL_args->mesh->camera->zoomCamera(mouseY-y);
     }
@@ -177,19 +177,43 @@ void PhotonMappingClear();
 void PackMesh();
 }
 
-void OpenGLCanvas::keyboardCB(GLFWwindow* /*window*/, int key, int /*scancode*/, int action, int mods) {
+void OpenGLCanvas::keyboardCB(GLFWwindow* w, int key, int /*scancode*/, int action, int mods) {
   // store the modifier keys
   shiftKeyPressed = (GLFW_MOD_SHIFT & mods);
   controlKeyPressed = (GLFW_MOD_CONTROL & mods);
   altKeyPressed = (GLFW_MOD_ALT & mods);
   superKeyPressed = (GLFW_MOD_SUPER & mods);
   // non modifier key actions
-  if (key == GLFW_KEY_ESCAPE || key == 'q' || key == 'Q') {
-    glfwSetWindowShouldClose(OpenGLCanvas::window, GL_TRUE);
+  if (key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q) {
+    glfwSetWindowShouldClose(window, GL_TRUE);
     // force quit
     exit(0);
   }
-  if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key < 256) {
+  if (controlKeyPressed) {
+    if (key == GLFW_KEY_S) {
+      glfwSetWindowTitle(w, "Render To File...");
+      glfwSetKeyCallback(w, [] (GLFWwindow *w, int key, int, int action, int mods) {
+        if (action != GLFW_PRESS || mods)
+          return;
+        switch (key) {
+        case GLFW_KEY_R: case GLFW_KEY_ENTER: case GLFW_KEY_KP_ENTER: {
+          std::thread renderT{[] {
+            args->raytracer->renderToFile(std::filesystem::current_path()/std::filesystem::path{args->input_file}.replace_extension("ppm"));
+          }};
+          renderT.join();
+          break;
+        }
+        default:
+          std::cout << "Canceled." << std::endl;
+          break;
+        }
+        glfwSetWindowTitle(w, windowTitle);
+        glfwSetKeyCallback(w, keyboardCB);
+      });
+      std::cout << "Render To File Options\n"
+      "  r: ray tracing (default)" << std::endl;
+    }
+  } else if ((action == GLFW_PRESS || action == GLFW_REPEAT) && key < 256) {
     switch (key) {
 
     case 'r': case 'R': case 'g': case 'G': {

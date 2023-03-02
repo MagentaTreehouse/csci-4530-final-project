@@ -102,8 +102,8 @@ OpenGLRenderer::OpenGLRenderer(MeshData *_mesh_data, ArgParser *args) {
 
     GLOBAL_args->mesh->camera->glPlaceCamera();
 
-    Matrix ProjectionMatrix = GLOBAL_args->mesh->camera->getProjectionMatrix();
-    Matrix ViewMatrix = GLOBAL_args->mesh->camera->getViewMatrix();
+    const Matrix &ProjectionMatrix = GLOBAL_args->mesh->camera->getProjectionMatrix();
+    const Matrix &ViewMatrix = GLOBAL_args->mesh->camera->getViewMatrix();
 
     glm::mat4 ModelMatrix(1.0);
     glm::mat4 ProjectionMatrix_mat4;

@@ -2,6 +2,7 @@
 #define _RAY_TRACER_
 
 #include <vector>
+#include <filesystem>
 #include "ray.h"
 #include "hit.h"
 
@@ -56,14 +57,14 @@ public:
 
   [[nodiscard]] std::size_t triCount() const;
   void packMesh(float* &current);
+  void renderToFile(const std::filesystem::path &) const;
+  template<bool Visualize = false> Vec3f renderPixel(double i, double j) const;
+  int DrawPixel();
 };
 
 // ====================================================================
 // ====================================================================
 
-int RayTraceDrawPixel();
-
 Vec3f VisualizeTraceRay(double i, double j);
-
 
 #endif

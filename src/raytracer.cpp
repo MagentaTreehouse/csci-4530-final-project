@@ -1,3 +1,5 @@
+#include <thread>
+#include <chrono>
 #include "raytracer.h"
 #include "material.h"
 #include "raytree.h"
@@ -8,6 +10,7 @@
 #include "primitive.h"
 #include "photon_mapping.h"
 #include "camera.h"
+#include "image.h"
 
 
 inline auto ToUnitSquare(std::tuple<double, double> p) {
@@ -133,12 +136,13 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
 
 
 // trace a ray through pixel (i,j) of the image an return the color
-Vec3f VisualizeTraceRay(double i, double j) {
+template<bool Visualize>
+Vec3f RayTracer::renderPixel(double i, double j) const {
 
   // ==================================
   // ASSIGNMENT: IMPLEMENT ANTIALIASING
   // ==================================
-  const auto &md{*GLOBAL_args->mesh_data};
+  const auto &md{*args->mesh_data};
   const auto aa{static_cast<std::size_t>(std::sqrt(md.num_antialias_samples))};
   const auto
     ds{1. / aa},
@@ -151,16 +155,19 @@ Vec3f VisualizeTraceRay(double i, double j) {
       // Here's what we do with a single sample per pixel:
       // construct & trace a ray through the center of the pixel
       const auto [x, y]{ToUnitSquare({i0 + ds * si, j0 + ds * sj})};
-      Ray r = GLOBAL_args->mesh->camera->generateRay(x,y); 
+      const Ray r = args->mesh->camera->generateRay(x,y); 
       Hit hit;
-      colorSum += GLOBAL_args->raytracer->TraceRay(r,hit,md.num_bounces);
+      colorSum += args->raytracer->TraceRay(r,hit,md.num_bounces);
       // add that ray for visualization
-      RayTree::AddMainSegment(r,0,hit.getT());
+      if constexpr (Visualize) RayTree::AddMainSegment(r,0,hit.getT());
     }
 
   return 1. / (aa * aa) * colorSum;
 }
 
+Vec3f VisualizeTraceRay(double i, double j) {
+  return GLOBAL_args->raytracer->renderPixel<true>(i, j);
+}
 
 
 // for visualization: find the "corners" of a pixel on an image plane
@@ -181,8 +188,8 @@ Vec3f PixelGetPos(double i, double j) {
 // and then up to the top right.  Initially the image is sampled very
 // coarsely.  Increment the static variables that track the progress
 // through the scans
-int RayTraceDrawPixel() {
-  auto &md{*GLOBAL_args->mesh_data};
+int RayTracer::DrawPixel() {
+  auto &md{*args->mesh_data};
   if (md.raytracing_x >= md.raytracing_divs_x) {
     // end of row
     md.raytracing_x = 0; 
@@ -206,12 +213,12 @@ int RayTraceDrawPixel() {
     md.raytracing_x = 0;
     md.raytracing_y = 0;
 
-    if (GLOBAL_args->raytracer->render_to_a) {
-      GLOBAL_args->raytracer->pixels_b.clear();
-      GLOBAL_args->raytracer->render_to_a = false;
+    if (render_to_a) {
+      pixels_b.clear();
+      render_to_a = false;
     } else {
-      GLOBAL_args->raytracer->pixels_a.clear();
-      GLOBAL_args->raytracer->render_to_a = true;
+      pixels_a.clear();
+      render_to_a = true;
     }
   }
 
@@ -233,10 +240,10 @@ int RayTraceDrawPixel() {
 
   Pixel p{pos1, pos2, pos3, pos4, {r,g,b}};
 
-  if (GLOBAL_args->raytracer->render_to_a) {
-    GLOBAL_args->raytracer->pixels_a.push_back(p);
+  if (render_to_a) {
+    pixels_a.push_back(p);
   } else {
-    GLOBAL_args->raytracer->pixels_b.push_back(p);
+    pixels_b.push_back(p);
   }  
 
   ++md.raytracing_x;
@@ -281,6 +288,48 @@ void RayTracer::packMesh(float* &current) {
     normal = {0,0,0};
     AddQuad(current,v1,v2,v3,v4,normal,p.color);
   }
+}
+
+
+void RayTracer::renderToFile(const std::filesystem::path &fPath) const {
+  std::cout << "Starting raytracing render..." << std::endl;
+  Image img{args->mesh_data->width, args->mesh_data->height};
+
+  auto renderBlock{[&] (std::tuple<int, int> wRange, std::tuple<int, int> hRange) {
+    const auto [wStart, wEnd]{wRange};
+    const auto [hStart, hEnd]{hRange};
+    for (int i{wStart}; i < wEnd; ++i) {
+      for (int j{hStart}; j < hEnd; ++j) {
+        const auto p{renderPixel(i, j)};
+        auto toUint8{[] (float x) -> std::uint8_t {
+          return std::round(255 * std::min(linear_to_srgb(x), 1.f));
+        }};
+        img.SetPixel(i, j, {toUint8(p.r()), toUint8(p.g()), toUint8(p.b())});
+      }
+    }
+  }};
+  static constexpr int blockSize{128};
+  using namespace std::chrono;
+  auto tStart{steady_clock::now()};
+  std::vector<std::thread> ts;
+  ts.reserve(std::ceil(1. * img.Width() / blockSize) * std::ceil(1. * img.Height() / blockSize));
+  for (int i{}; i < img.Width(); i += blockSize)
+    for (int j{}; j < img.Height(); j += blockSize)
+      ts.emplace_back([&, i, j] () {renderBlock(
+        {i, std::min(i + blockSize, img.Width())},
+        {j, std::min(j + blockSize, img.Height())}
+      );});
+  for (auto &t: ts)
+    t.join();
+
+  auto renderTime{steady_clock::now() - tStart};
+  auto p{std::cout.precision(2)};
+  (std::cout << "Render completed in " << std::fixed
+    << duration_cast<duration<float>>(renderTime).count() << " seconds." << std::endl
+    << std::defaultfloat).precision(p);
+
+  img.Save(fPath.string());
+  std::cout << "Image saved as " << fPath << std::endl;
 }
 
 // ===========================================================================

@@ -63,7 +63,7 @@ extern "C" {
   }
 
   bool DrawPixel() {
-    return (bool)RayTraceDrawPixel();
+    return (bool)GLOBAL_args->raytracer->DrawPixel();
   }
 
   void cameraTranslate(float x, float y) {

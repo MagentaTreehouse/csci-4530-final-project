@@ -8,9 +8,9 @@
 // 24 bit color
 class Color {
 public:
-  Color(int r_=255, int g_=255, int b_=255) : r(r_),g(g_),b(b_) {}
+  Color(std::uint8_t r_=255, std::uint8_t g_=255, std::uint8_t b_=255) : r(r_),g(g_),b(b_) {}
   [[nodiscard]] bool isWhite() const { return r==255 && g==255 && b==255; }
-  int r,g,b;
+  std::uint8_t r,g,b;
 };
 
 // ====================================================================
@@ -21,16 +21,15 @@ class Image {
 public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  Image(std::string_view filename = ""): width{}, height{}, data{}, gl_data{}
+  Image(std::string_view filename = ""): width{}, height{}, data{}
   {
     if (filename != "") Load(filename); 
   }
+  Image(int w, int h): width{w}, height{h}, data{new Color[width*height]} {}
   void Allocate(int w, int h) {
     width = w;
     height = h;
     delete [] data;
-    delete [] gl_data;
-    gl_data = nullptr;
     if (width == 0 && height == 0) {
       data = nullptr;
     } else {
@@ -39,8 +38,7 @@ public:
     }
   }
   ~Image() {
-    delete [] data; 
-    delete [] gl_data;
+    delete [] data;
   }
 
   Image(const Image &image) { 
@@ -67,8 +65,6 @@ public:
     assert(x >= 0 && x < width);
     assert(y >= 0 && y < height);
     return data[y*width + x]; }
-  // for use with OpenGL (not const because it builds gl_data first)
-  unsigned char* getGLPixelData();
 
   // =========
   // MODIFIERS
@@ -83,7 +79,7 @@ public:
   // ===========
   // LOAD & SAVE
   bool Load(std::string_view filename);
-  bool Save(std::string_view filename) const; 
+  bool Save(std::string_view filename) const;
 
 private:
   // ==============
@@ -91,7 +87,6 @@ private:
   int width;
   int height;
   Color *data;
-  unsigned char* gl_data;
 };
 
 #endif

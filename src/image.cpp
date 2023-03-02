@@ -25,10 +25,8 @@ bool Image::Save(std::string_view filename) const {
   // flip y so that (0,0) is bottom left corner
   for (int y = height-1; y >= 0; y--) {
     for (int x=0; x<width; x++) {
-      Color v = GetPixel(x,y);
-      fputc ((unsigned char)(v.r),file);
-      fputc ((unsigned char)(v.g),file);
-      fputc ((unsigned char)(v.b),file);
+      const Color &v = GetPixel(x,y);
+      fwrite(&v, sizeof(v), 1, file);
     }
   }
   fclose(file);
@@ -74,12 +72,11 @@ bool Image::Load(std::string_view filename) {
   fclose(file);
   return true;
 }
-
+/*
 unsigned char* Image::getGLPixelData() {
-  delete [] gl_data;
   gl_data = new unsigned char[width*height*3];
   for (int x=0; x<width; x++) {
-    for (int y=0; y<height; y++) { 
+    for (int y=0; y<height; y++) {
       const Color &v = GetPixel(x,y);
       gl_data[y*width*3+x*3+0] = v.r;
       gl_data[y*width*3+x*3+1] = v.g;
@@ -88,6 +85,6 @@ unsigned char* Image::getGLPixelData() {
   }
   return gl_data;
 }
-
+*/
 // ====================================================================
 // ====================================================================

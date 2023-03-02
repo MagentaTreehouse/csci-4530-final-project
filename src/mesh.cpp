@@ -171,7 +171,7 @@ void Mesh::Load(ArgParser *_args) {
 
   std::string file = args->path+'/'+args->input_file;
 
-  std::ifstream objfile(file.c_str());
+  std::ifstream objfile{file};
   if (!objfile.good()) {
     std::cout << "ERROR! CANNOT OPEN " << file << std::endl;
     return;
