@@ -1,5 +1,6 @@
 #include <thread>
 #include <chrono>
+#include <type_traits>
 #include "raytracer.h"
 #include "material.h"
 #include "raytree.h"
@@ -51,8 +52,8 @@ bool RayTracer::CastRay(const Ray &ray, Hit &h, bool use_rasterized_patches) con
 
 
 // does the recursive (shadow rays & recursive rays) work
-template<class F>
-Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, int depth, F directIllum) const {
+template<class F, bool Visualize>
+Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, int depth, F directIllum, std::bool_constant<Visualize>) const {
 
   hit = {};
   // First cast a ray and see if we hit anything.
@@ -66,13 +67,13 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, in
   }
 
   // otherwise decide what to do based on the material
-  const Material &m{*hit.getMaterial()};
+  const Material *m{hit.getMaterial()};
   assert (m != nullptr);
 
   // rays coming from the light source are set to white, don't bother to ray trace further.
-  if (m.getEmittedColor().Length() > 0.001) {
+  if (m->getEmittedColor().Length() > 0.001) {
     return {1,1,1};
-  } 
+  }
 
   const Vec3f &d{ray.getDirection()};
   const Vec3f &normal{hit.getNormal()};
@@ -80,7 +81,7 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, in
 
   // ----------------------------------------------
   // start with the indirect light (ambient light)
-  const Vec3f diffuse_color{m.getDiffuseColor(hit.get_s(),hit.get_t())};
+  const Vec3f diffuse_color{m->getDiffuseColor(hit.get_s(),hit.get_t())};
   Vec3f answer{args->mesh_data->gather_indirect?
     diffuse_color * (photon_mapping->GatherIndirect(point, normal, d) + ambient) : // photon mapping for more accurate indirect light
     diffuse_color * ambient // the usual ray tracing hack for indirect light
@@ -98,7 +99,7 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, in
       [&] (const Vec3f &ptLtSample) {
         const float dist = ptLtSample.Length();
         const Vec3f ltIrradiance{1 / (float(M_PI)*dist*dist) * ltColor};
-        return m.Shade(ray, hit, ptLtSample.Normalized(), ltIrradiance);
+        return m->Shade(ray, hit, ptLtSample.Normalized(), ltIrradiance);
       });
   }
 
@@ -107,18 +108,21 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, in
   // =================================
   // ASSIGNMENT:  ADD REFLECTIVE LOGIC
   // =================================
-  if (m.getReflectiveColor() != Vec3f{} && depth) {
+  if (m->getReflectiveColor() != Vec3f{} && depth) {
+    const Ray r{point, Reflection(d, normal)};
     Hit h{};
     answer +=
-      m.getReflectiveColor() *
-      TraceRayImpl({point, Reflection(d, normal)}, h, ambient, depth - 1, directIllum);
+      m->getReflectiveColor() *
+      TraceRayImpl<F, Visualize>(r, h, ambient, depth - 1, directIllum, {});
+    if constexpr (Visualize) RayTree::AddReflectedSegment(r, 0, h.getT());
   }
-  
+
   return answer;
 
 }
 
 
+template<bool Visualize>
 Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
   const auto &md{*args->mesh_data};
   const Vec3f ambientLt{
@@ -129,32 +133,39 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
 
   // "shadow ray"
   auto directIllum{[&] (const Vec3f &pt, const Vec3f &ptLt, auto shadeLocal) {
+    const Ray r{pt, ptLt};
     Hit block{};
-    CastRay({pt, ptLt}, block, false);
+    CastRay(r, block, false);
+    if constexpr (Visualize) RayTree::AddShadowSegment(r, 0, block.getT());
     return block.getT() > 1 - EPSILON? shadeLocal(ptLt) : Vec3f{};
   }};
 
-  switch (int ssamp{md.num_shadow_samples}; ssamp * md.num_antialias_samples) {
+  auto vis{std::bool_constant<Visualize>{}};
+  // The behavior of direct illumination calculation differs for certain values of shadow
+  // samples and antialiasing samples
+  switch (int sSamp{md.num_shadow_samples}; sSamp * md.num_antialias_samples) {
   case 0:
   return TraceRayImpl(ray, hit, ambientLt, depth,
-    [] (const Face &f, const Vec3f &pt, auto shadeLocal) {
-      return shadeLocal(f.computeCentroid() - pt);
-    });
+    [] (const Face &f, const Vec3f &pt, auto shadeLocal) { // no shadows considered
+      const auto ptLtC{f.computeCentroid() - pt};
+      if constexpr (Visualize) RayTree::AddShadowSegment({pt, ptLtC}, 0, 1);
+      return shadeLocal(ptLtC);
+    }, vis);
 
   case 1:
   return TraceRayImpl(ray, hit, ambientLt, depth,
-    [&] (const Face &f, const Vec3f &pt, auto shadeLocal) {
+    [&] (const Face &f, const Vec3f &pt, auto shadeLocal) { // "decay" to hard shadows
       return directIllum(pt, f.computeCentroid() - pt, shadeLocal);
-    });
+    }, vis);
 
   default:
   return TraceRayImpl(ray, hit, ambientLt, depth,
-    [&] (const Face &f, const Vec3f &pt, auto shadeLocal) {
+    [&] (const Face &f, const Vec3f &pt, auto shadeLocal) { // soft shadows
       Vec3f directIllumSum{};
-      for (int i{}; i < ssamp; ++i)
+      for (int i{}; i < sSamp; ++i)
         directIllumSum += directIllum(pt, f.RandomPoint() - pt, shadeLocal);
-      return 1. / ssamp * directIllumSum;
-    });
+      return 1. / sSamp * directIllumSum;
+    }, vis);
   }
 }
 
@@ -179,9 +190,9 @@ Vec3f RayTracer::renderPixel(double i, double j) const {
       // Here's what we do with a single sample per pixel:
       // construct & trace a ray through the center of the pixel
       const auto [x, y]{ToUnitSquare({i0 + ds * si, j0 + ds * sj})};
-      const Ray r = args->mesh->camera->generateRay(x,y); 
+      const Ray r = args->mesh->camera->generateRay(x,y);
       Hit hit;
-      colorSum += TraceRay(r, hit, md.num_bounces);
+      colorSum += TraceRay<Visualize>(r, hit, md.num_bounces);
       // add that ray for visualization
       if constexpr (Visualize) RayTree::AddMainSegment(r, 0, hit.getT());
     }
@@ -199,7 +210,7 @@ Vec3f VisualizeTraceRay(double i, double j) {
 Vec3f PixelGetPos(double i, double j) {
   const auto &cam = *GLOBAL_args->mesh->camera;
   const auto [x, y]{ToUnitSquare({i, j})};
-  const Ray r = cam.generateRay(x,y); 
+  const Ray r = cam.generateRay(x,y);
   const Vec3f &cp = cam.camera_position;
   const Vec3f &poi = cam.point_of_interest;
   const float distance = DistanceBetweenTwoPoints(cp, poi)/2.0f;
@@ -215,7 +226,7 @@ int RayTracer::DrawPixel() {
   auto &md{*args->mesh_data};
   if (md.raytracing_x >= md.raytracing_divs_x) {
     // end of row
-    md.raytracing_x = 0; 
+    md.raytracing_x = 0;
     ++md.raytracing_y;
   }
   if (md.raytracing_y >= md.raytracing_divs_y) {
@@ -267,7 +278,7 @@ int RayTracer::DrawPixel() {
     pixels_a.push_back(p);
   } else {
     pixels_b.push_back(p);
-  }  
+  }
 
   ++md.raytracing_x;
   return 1;
@@ -285,15 +296,14 @@ void RayTracer::packMesh(float* &current) {
     Vec3f v2 = p.v2;
     Vec3f v3 = p.v3;
     Vec3f v4 = p.v4;
-    Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
+    const Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
     if (render_to_a) {
       v1 += 0.02*normal;
       v2 += 0.02*normal;
       v3 += 0.02*normal;
       v4 += 0.02*normal;
     }
-    normal = {0,0,0};
-    AddQuad(current,v1,v2,v3,v4,normal,p.color);
+    AddQuad(current,v1,v2,v3,v4,{},p.color);
   }
 
   for (const auto &p: pixels_b) {
@@ -301,15 +311,14 @@ void RayTracer::packMesh(float* &current) {
     Vec3f v2 = p.v2;
     Vec3f v3 = p.v3;
     Vec3f v4 = p.v4;
-    Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
+    const Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
     if (!render_to_a) {
       v1 += 0.02*normal;
       v2 += 0.02*normal;
       v3 += 0.02*normal;
       v4 += 0.02*normal;
     }
-    normal = {0,0,0};
-    AddQuad(current,v1,v2,v3,v4,normal,p.color);
+    AddQuad(current,v1,v2,v3,v4,{},p.color);
   }
 }
 

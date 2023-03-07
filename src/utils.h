@@ -83,9 +83,9 @@ inline Vec3f RandomUnitVector() {
   Vec3f tmp;
   while (true) {
     tmp = {
-      2*GLOBAL_args->rand()-1,  // random real in [-1,1]
-      2*GLOBAL_args->rand()-1,  // random real in [-1,1]
-      2*GLOBAL_args->rand()-1   // random real in [-1,1]
+      2*ArgParser::rand()-1,  // random real in [-1,1]
+      2*ArgParser::rand()-1,  // random real in [-1,1]
+      2*ArgParser::rand()-1   // random real in [-1,1]
     };
     if (tmp.Length() < 1) break;
   }

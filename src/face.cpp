@@ -28,8 +28,8 @@ Vec3f Face::RandomPoint() const {
   Vec3f c = (*this)[2]->get();
   Vec3f d = (*this)[3]->get();
 
-  float s = GLOBAL_args->rand(); // random real in [0,1]
-  float t = GLOBAL_args->rand(); // random real in [0,1]
+  float s = ArgParser::rand(); // random real in [0,1]
+  float t = ArgParser::rand(); // random real in [0,1]
 
   return s*t*a + s*(1-t)*b + (1-s)*t*d + (1-s)*(1-t)*c;
 }
