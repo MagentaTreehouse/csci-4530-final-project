@@ -123,7 +123,7 @@ void Radiosity::ComputeFormFactors() {
       const auto
         cosThetaI{normals[i].Dot3(icjc) / (normals[i].Length() * r)},
         cosThetaJ{normals[j].Dot3(-icjc) / (normals[j].Length() * r)};
-      setFormFactor(i, j, cosThetaI * cosThetaJ / M_PI / (r * r) / getArea(i));
+      setFormFactor(i, j, std::abs(cosThetaI * cosThetaJ / M_PI / (r * r) / getArea(i)));
     }
     normalizeFormFactors(i);
   }
