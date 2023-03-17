@@ -3,7 +3,6 @@
 #include "mesh.h"
 #include "meshdata.h"
 #include "face.h"
-#include "raytree.h"
 #include "raytracer.h"
 #include "utils.h"
 
@@ -19,6 +18,7 @@ Radiosity::Radiosity(Mesh *m, ArgParser *a):
   undistributed{},
   absorbed{},
   radiance{},
+  normals{},
   max_undistributed_patch{-1},
   total_area{-1}
 {
@@ -35,12 +35,14 @@ void Radiosity::Cleanup() {
   delete [] undistributed;
   delete [] absorbed;
   delete [] radiance;
+  delete [] normals;
   num_faces = -1;
   formfactors = nullptr;
   area = nullptr;
   undistributed = nullptr;
   absorbed = nullptr;
   radiance = nullptr;
+  normals = nullptr;
   max_undistributed_patch = -1;
   total_area = -1;
 }
@@ -50,6 +52,7 @@ void Radiosity::Reset() {
   delete [] undistributed;
   delete [] absorbed;
   delete [] radiance;
+  delete [] normals;
 
   // create and fill the data structures
   num_faces = mesh->numFaces();
@@ -57,14 +60,16 @@ void Radiosity::Reset() {
   undistributed = new Vec3f[num_faces];
   absorbed = new Vec3f[num_faces];
   radiance = new Vec3f[num_faces];
+  normals = new Vec3f[num_faces];
   for (int i = 0; i < num_faces; i++) {
     Face *f = mesh->getFace(i);
     f->setRadiosityPatchIndex(i);
     setArea(i,f->getArea());
-    Vec3f emit = f->getMaterial()->getEmittedColor();
+    const Vec3f &emit = f->getMaterial()->getEmittedColor();
     setUndistributed(i,emit);
     setAbsorbed(i,{0,0,0});
     setRadiance(i,emit);
+    normals[i] = f->computeNormal();
   }
 
   // find the patch with the most undistributed energy
@@ -76,7 +81,7 @@ void Radiosity::Reset() {
 // =======================================================================================
 
 void Radiosity::findMaxUndistributed() {
-  // find the patch with the most undistributed energy 
+  // find the patch with the most undistributed energy
   // don't forget that the patches may have different sizes!
   max_undistributed_patch = -1;
   total_undistributed = 0;
@@ -100,12 +105,29 @@ void Radiosity::ComputeFormFactors() {
   assert (num_faces > 0);
   formfactors = new float[num_faces*num_faces];
 
-
   // =====================================
   // ASSIGNMENT:  COMPUTE THE FORM FACTORS
   // =====================================
-
-
+  for (int i{}; i < num_faces; ++i) {
+    for (int j{}; j < num_faces; ++j) {
+      if (i == j) continue;
+      const auto pi{mesh->getFace(i)->computeCentroid()}, pj{mesh->getFace(j)->computeCentroid()};
+      Hit h;
+      raytracer->CastRay({pi, pj - pi}, h, true);
+      if (h.getT() < 1) {
+        setFormFactor(i, j, 0);
+        continue;
+      }
+      const auto icjc{pj - pi};
+      const auto r{icjc.Length()};
+      const auto
+        cosThetaI{normals[i].Dot3(icjc) / (normals[i].Length() * r)},
+        cosThetaJ{normals[j].Dot3(-icjc) / (normals[j].Length() * r)};
+      setFormFactor(i, j, cosThetaI * cosThetaJ / M_PI / (r * r) / getArea(i));
+    }
+    normalizeFormFactors(i);
+  }
+  findMaxUndistributed();
 }
 
 
@@ -113,23 +135,29 @@ void Radiosity::ComputeFormFactors() {
 // ================================================================
 
 float Radiosity::Iterate() {
-  if (formfactors == nullptr) 
+  if (formfactors == nullptr)
     ComputeFormFactors();
   assert (formfactors != nullptr);
-
-
-
 
   // ==========================================
   // ASSIGNMENT:  IMPLEMENT RADIOSITY ALGORITHM
   // ==========================================
 
-
+  auto undistributed{this->undistributed[max_undistributed_patch]};
+  setUndistributed(max_undistributed_patch, {});
+  for (int i{}; i < num_faces; ++i) {
+    if (i == max_undistributed_patch) continue;
+    const auto &rho{mesh->getFace(i)->getMaterial()->getDiffuseColor()};
+    const auto tp{undistributed * getFormFactor(i, max_undistributed_patch) * (getArea(max_undistributed_patch) / getArea(i))};
+    const auto dRadiance{rho * tp};
+    setUndistributed(i, getUndistributed(i) + dRadiance);
+    setRadiance(i, getRadiance(i) + dRadiance);
+    setAbsorbed(i, getAbsorbed(i) + (Vec3f{1, 1, 1} - rho) * tp);
+  }
+  findMaxUndistributed();
   // return the total light yet undistributed
   // (so we can decide when the solution has sufficiently converged)
-  return 0;
-
-
+  return total_undistributed;
 }
 
 
@@ -150,10 +178,10 @@ void CollectFacesWithVertex(Vertex *have, Face *f, std::vector<Face*> &faces) {
     Edge *eb = f->getEdge()->getNext()->getOpposite();
     Edge *ec = f->getEdge()->getNext()->getNext()->getOpposite();
     Edge *ed = f->getEdge()->getNext()->getNext()->getNext()->getOpposite();
-    if (ea != nullptr) CollectFacesWithVertex(have,ea->getFace(),faces);
-    if (eb != nullptr) CollectFacesWithVertex(have,eb->getFace(),faces);
-    if (ec != nullptr) CollectFacesWithVertex(have,ec->getFace(),faces);
-    if (ed != nullptr) CollectFacesWithVertex(have,ed->getFace(),faces);
+    if (ea) CollectFacesWithVertex(have,ea->getFace(),faces);
+    if (eb) CollectFacesWithVertex(have,eb->getFace(),faces);
+    if (ec) CollectFacesWithVertex(have,ec->getFace(),faces);
+    if (ed) CollectFacesWithVertex(have,ed->getFace(),faces);
   }
 }
 
@@ -182,7 +210,7 @@ Vec3f Radiosity::setupHelperForColor(Face *f, int i, int j) {
     return color;
   } else if (args->mesh_data->render_mode == RENDER_LIGHTS) {
     return f->getMaterial()->getEmittedColor();
-  } else if (args->mesh_data->render_mode == RENDER_UNDISTRIBUTED) { 
+  } else if (args->mesh_data->render_mode == RENDER_UNDISTRIBUTED) {
     return getUndistributed(i);
   } else if (args->mesh_data->render_mode == RENDER_ABSORBED) {
     return getAbsorbed(i);
@@ -206,7 +234,7 @@ std::size_t Radiosity::triCount() const {
 }
 
 void Radiosity::packMesh(float* &current) {
-  
+
   for (int i = 0; i < num_faces; i++) {
     Face *f = mesh->getFace(i);
     const Vec3f normal = f->computeNormal();

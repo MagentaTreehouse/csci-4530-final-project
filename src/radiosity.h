@@ -34,7 +34,6 @@ public:
   // ACCESSORS
   [[nodiscard]] Mesh* getMesh() const { return mesh; }
   [[nodiscard]] float getFormFactor(int i, int j) const {
-    // F_i,j radiant energy leaving i arriving at j
     assert (i >= 0 && i < num_faces);
     assert (j >= 0 && j < num_faces);
     assert (formfactors != nullptr);
@@ -55,7 +54,7 @@ public:
   // =========
   // MODIFIERS
   float Iterate();
-  void setFormFactor(int i, int j, float value) { 
+  void setFormFactor(int i, int j, float value) {
     assert (i >= 0 && i < num_faces);
     assert (j >= 0 && j < num_faces);
     assert (formfactors != nullptr);
@@ -71,14 +70,14 @@ public:
   void setArea(int i, float value) {
     assert (i >= 0 && i < num_faces);
     area[i] = value; }
-  void setUndistributed(int i, const Vec3f &value) { 
+  void setUndistributed(int i, const Vec3f &value) {
     assert (i >= 0 && i < num_faces);
     undistributed[i] = value; }
   void findMaxUndistributed();
-  void setAbsorbed(int i, const Vec3f &value) { 
+  void setAbsorbed(int i, const Vec3f &value) {
     assert (i >= 0 && i < num_faces);
     absorbed[i] = value; }
-  void setRadiance(int i, const Vec3f &value) { 
+  void setRadiance(int i, const Vec3f &value) {
     assert (i >= 0 && i < num_faces);
     radiance[i] = value; }
 
@@ -105,6 +104,7 @@ private:
   Vec3f *undistributed; // energy per unit area
   Vec3f *absorbed;      // energy per unit area
   Vec3f *radiance;      // energy per unit area
+  Vec3f *normals;
 
   int max_undistributed_patch;  // the patch with the most undistributed energy
   float total_undistributed;    // the total amount of undistributed light
