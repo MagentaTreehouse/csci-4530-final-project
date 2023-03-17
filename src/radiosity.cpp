@@ -110,20 +110,17 @@ void Radiosity::ComputeFormFactors() {
   // =====================================
   for (int i{}; i < num_faces; ++i) {
     for (int j{}; j < num_faces; ++j) {
-      if (i == j) continue;
+      if (i == j) {setFormFactor(i, j, 0); continue;}
       const auto pi{mesh->getFace(i)->computeCentroid()}, pj{mesh->getFace(j)->computeCentroid()};
       Hit h;
-      raytracer->CastRay({pi, pj - pi}, h, true);
-      if (h.getT() < 1) {
-        setFormFactor(i, j, 0);
-        continue;
-      }
+      raytracer->CastRay({pj, pi - pj}, h, true);
+      if (h.getT() < 1) {setFormFactor(i, j, 0); continue;}
       const auto icjc{pj - pi};
       const auto r{icjc.Length()};
       const auto
         cosThetaI{normals[i].Dot3(icjc) / (normals[i].Length() * r)},
         cosThetaJ{normals[j].Dot3(-icjc) / (normals[j].Length() * r)};
-      setFormFactor(i, j, std::abs(cosThetaI * cosThetaJ / M_PI / (r * r) / getArea(i)));
+      setFormFactor(i, j, std::abs(cosThetaI * cosThetaJ) / M_PI / (r * r) / getArea(i));
     }
     normalizeFormFactors(i);
   }
