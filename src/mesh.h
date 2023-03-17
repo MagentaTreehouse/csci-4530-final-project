@@ -55,26 +55,21 @@ public:
 
   // =================
   // ACCESS THE LIGHTS
-  [[nodiscard]] std::vector<Face*>& getLights() { return original_lights; }
+  [[nodiscard]] const std::vector<Face*>& getLights() const { return original_lights; }
 
   // ==================================
   // ACCESS THE QUADS (for ray tracing)
   [[nodiscard]] int numOriginalQuads() const { return original_quads.size(); }
-  [[nodiscard]] Face* getOriginalQuad(int i) const {
-    assert (i < numOriginalQuads());
-    return original_quads[i]; }
+  [[nodiscard]] const auto &getOriginalQuads() const { return original_quads; }
 
   // =======================================
   // ACCESS THE PRIMITIVES (for ray tracing)
   [[nodiscard]] int numPrimitives() const { return primitives.size(); }
-  [[nodiscard]] Primitive* getPrimitive(int i) const {
-    assert (i >= 0 && i < numPrimitives()); 
-    return primitives[i]; }
+  [[nodiscard]] const auto &getPrimitives() const { return primitives; }
+
   // ACCESS THE PRIMITIVES (for radiosity)
   [[nodiscard]] int numRasterizedPrimitiveFaces() const { return rasterized_primitive_faces.size(); }
-  [[nodiscard]] Face* getRasterizedPrimitiveFace(int i) const {
-    assert (i >= 0 && i < numRasterizedPrimitiveFaces());
-    return rasterized_primitive_faces[i]; }
+  [[nodiscard]] const auto &getRasterizedPrimitiveFaces() const { return rasterized_primitive_faces; }
 
   // ==============================================================
   // ACCESS THE SUBDIVIDED QUADS + RASTERIZED FACES (for radiosity)
@@ -82,7 +77,7 @@ public:
   [[nodiscard]] Face* getFace(int i) const {
     assert (i >= 0 && i < numFaces());
     if (i < (int)subdivided_quads.size()) return subdivided_quads[i];
-    else return getRasterizedPrimitiveFace(i-subdivided_quads.size()); }
+    else return rasterized_primitive_faces[i-subdivided_quads.size()]; }
 
   // ============================
   // CREATE OR SUBDIVIDE GEOMETRY
@@ -109,7 +104,7 @@ private:
   Vertex* AddMidVertex(Vertex *a, Vertex *b, Vertex *c, Vertex *d);
   void addFace(Vertex *a, Vertex *b, Vertex *c, Vertex *d, Material *material, enum FACE_TYPE face_type);
   void removeFaceEdges(Face *f);
-  void addPrimitive(Primitive *p); 
+  void addPrimitive(Primitive *p);
 
   // ==============
   // REPRESENTATION
@@ -121,17 +116,17 @@ private:
 
  private:
   // the bounding box of all rasterized faces in the scene
-  BoundingBox *bbox; 
+  BoundingBox *bbox;
 
   // the vertices & edges used by all quads (including rasterized primitives)
-  std::vector<Vertex*> vertices;  
+  std::vector<Vertex*> vertices;
   edgeshashtype edges;
   vphashtype vertex_parents;
 
   // the quads from the .obj file (before subdivision)
   std::vector<Face*> original_quads;
   // the quads from the .obj file that have non-zero emission value
-  std::vector<Face*> original_lights; 
+  std::vector<Face*> original_lights;
   // all primitives (spheres, etc.)
   std::vector<Primitive*> primitives;
   // the primitives converted to quads

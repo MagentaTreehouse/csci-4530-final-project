@@ -17,9 +17,10 @@
 inline auto ToUnitSquare(std::tuple<double, double> p) {
   const auto &md{*GLOBAL_args->mesh_data};
   const int max_d{std::max(md.width,md.height)};
+  const auto [x, y]{p};
   return std::tuple{
-    (std::get<0>(p) - md.width / 2.) / max_d + .5,
-    (std::get<1>(p) - md.height / 2.) / max_d + .5
+    (x - md.width / 2.) / max_d + .5,
+    (y - md.height / 2.) / max_d + .5
   };
 }
 
@@ -30,22 +31,16 @@ bool RayTracer::CastRay(const Ray &ray, Hit &h, bool use_rasterized_patches) con
   bool answer = false;
 
   // intersect each of the quads
-  for (int i = 0; i < mesh->numOriginalQuads(); i++) {
-    Face *f = mesh->getOriginalQuad(i);
-    answer |= f->intersect(ray,h,args->mesh_data->intersect_backfacing);
-  }
+  for (auto fp: mesh->getOriginalQuads())
+    answer |= fp->intersect(ray,h,args->mesh_data->intersect_backfacing);
 
   // intersect each of the primitives (either the patches, or the original primitives)
   if (use_rasterized_patches) {
-    for (int i = 0; i < mesh->numRasterizedPrimitiveFaces(); i++) {
-      Face *f = mesh->getRasterizedPrimitiveFace(i);
-      answer |= f->intersect(ray,h,args->mesh_data->intersect_backfacing);
-    }
+    for (auto fp: mesh->getRasterizedPrimitiveFaces())
+      answer |= fp->intersect(ray,h,args->mesh_data->intersect_backfacing);
   } else {
-    int num_primitives = mesh->numPrimitives();
-    for (int i = 0; i < num_primitives; i++) {
-      answer |= mesh->getPrimitive(i)->intersect(ray,h);
-    }
+    for (auto pp: mesh->getPrimitives())
+      answer |= pp->intersect(ray,h);
   }
   return answer;
 }
@@ -54,7 +49,6 @@ bool RayTracer::CastRay(const Ray &ray, Hit &h, bool use_rasterized_patches) con
 // does the recursive (shadow rays & recursive rays) work
 template<class F, bool Visualize>
 Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, int depth, F directIllum, std::bool_constant<Visualize>) const {
-
   hit = {};
   // First cast a ray and see if we hit anything.
   // if there is no intersection, simply return the background color
@@ -118,7 +112,6 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, in
   }
 
   return answer;
-
 }
 
 
@@ -187,13 +180,10 @@ Vec3f RayTracer::renderPixel(double i, double j) const {
   Vec3f colorSum{};
   for (std::size_t si{}; si < aa; ++si)
     for (std::size_t sj{}; sj < aa; ++sj) {
-      // Here's what we do with a single sample per pixel:
-      // construct & trace a ray through the center of the pixel
       const auto [x, y]{ToUnitSquare({i0 + ds * si, j0 + ds * sj})};
       const Ray r = args->mesh->camera->generateRay(x,y);
       Hit hit;
       colorSum += TraceRay<Visualize>(r, hit, md.num_bounces);
-      // add that ray for visualization
       if constexpr (Visualize) RayTree::AddMainSegment(r, 0, hit.getT());
     }
 
@@ -291,35 +281,25 @@ std::size_t RayTracer::triCount() const {
 }
 
 void RayTracer::packMesh(float* &current) {
-  for (const auto &p: pixels_a) {
-    Vec3f v1 = p.v1;
-    Vec3f v2 = p.v2;
-    Vec3f v3 = p.v3;
-    Vec3f v4 = p.v4;
-    const Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
-    if (render_to_a) {
-      v1 += 0.02*normal;
-      v2 += 0.02*normal;
-      v3 += 0.02*normal;
-      v4 += 0.02*normal;
+  auto pack{[&] (const std::vector<Pixel> &pixels, bool renderToPixels) {
+    for (const auto &p: pixels) {
+      Vec3f
+        v1 = p.v1,
+        v2 = p.v2,
+        v3 = p.v3,
+        v4 = p.v4;
+      const Vec3f normal{(ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized()};
+      if (renderToPixels) {
+        v1 += 0.02*normal;
+        v2 += 0.02*normal;
+        v3 += 0.02*normal;
+        v4 += 0.02*normal;
+      }
+      AddQuad(current,v1,v2,v3,v4,{},p.color);
     }
-    AddQuad(current,v1,v2,v3,v4,{},p.color);
-  }
-
-  for (const auto &p: pixels_b) {
-    Vec3f v1 = p.v1;
-    Vec3f v2 = p.v2;
-    Vec3f v3 = p.v3;
-    Vec3f v4 = p.v4;
-    const Vec3f normal = (ComputeNormal(v1,v2,v3) + ComputeNormal(v1,v3,v4)).Normalized();
-    if (!render_to_a) {
-      v1 += 0.02*normal;
-      v2 += 0.02*normal;
-      v3 += 0.02*normal;
-      v4 += 0.02*normal;
-    }
-    AddQuad(current,v1,v2,v3,v4,{},p.color);
-  }
+  }};
+  pack(pixels_a, render_to_a);
+  pack(pixels_b, !render_to_a);
 }
 
 

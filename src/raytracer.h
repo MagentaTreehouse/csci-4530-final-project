@@ -37,7 +37,7 @@ public:
   void setPhotonMapping(PhotonMapping *pm) { photon_mapping = pm; }
 
   // casts a single ray through the scene geometry and finds the closest hit
-  bool CastRay(const Ray &ray, Hit &h, bool use_sphere_patches) const;
+  bool CastRay(const Ray &ray, Hit &h, bool use_rasterized_patches) const;
   template<bool Visualize = false> Vec3f TraceRay(const Ray &, Hit &, int depth = 0) const;
 
 private:
