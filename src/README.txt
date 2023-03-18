@@ -60,7 +60,7 @@ EXTRA CREDIT: SAMPLING [ 1 ]
 1 point for stratified sampling of pixel in image plane
 1 point for stratified sampling of soft shadows
 includes discussion of performance/quality
-Stratified sampling of soft shadows implemented. Good quality and performance. The time it takes is very close to random samping but produces less noise in the soft shadows.
+Stratified sampling of soft shadows implemented. Good quality and performance. The time it takes is very close to random sampling but produces less noise in the soft shadows.
 
 
 OTHER DISTRIBUTION RAY TRACING EXTRA CREDIT [ 0 ]
