@@ -55,9 +55,9 @@ Vertex* Mesh::addVertex(const Vec3f &position) {
   int index = numVertices();
   vertices.push_back(new Vertex(index,position));
   // extend the bounding box to include this point
-  if (bbox == nullptr) 
+  if (bbox == nullptr)
     bbox = new BoundingBox(position,position);
-  else 
+  else
     bbox->Extend(position);
   return vertices[index];
 }
@@ -82,7 +82,7 @@ void Mesh::addFace(Vertex *a, Vertex *b, Vertex *c, Vertex *d, Material *materia
   eb->setNext(ec);
   ec->setNext(ed);
   ed->setNext(ea);
-  // verify these edges aren't already in the mesh 
+  // verify these edges aren't already in the mesh
   // (which would be a bug, or a non-manifold mesh)
   assert (edges.find({a,b}) == edges.end());
   assert (edges.find({b,c}) == edges.end());
@@ -94,10 +94,10 @@ void Mesh::addFace(Vertex *a, Vertex *b, Vertex *c, Vertex *d, Material *materia
   edges[{c,d}] = ec;
   edges[{d,a}] = ed;
   // connect up with opposite edges (if they exist)
-  edgeshashtype::iterator ea_op = edges.find({b,a}); 
-  edgeshashtype::iterator eb_op = edges.find({c,b}); 
-  edgeshashtype::iterator ec_op = edges.find({d,c}); 
-  edgeshashtype::iterator ed_op = edges.find({a,d}); 
+  edgeshashtype::iterator ea_op = edges.find({b,a});
+  edgeshashtype::iterator eb_op = edges.find({c,b});
+  edgeshashtype::iterator ec_op = edges.find({d,c});
+  edgeshashtype::iterator ed_op = edges.find({a,d});
   if (ea_op != edges.end()) { ea_op->second->setOpposite(ea); }
   if (eb_op != edges.end()) { eb_op->second->setOpposite(eb); }
   if (ec_op != edges.end()) { ec_op->second->setOpposite(ec); }
@@ -107,7 +107,7 @@ void Mesh::addFace(Vertex *a, Vertex *b, Vertex *c, Vertex *d, Material *materia
     original_quads.push_back(f);
     subdivided_quads.push_back(f);
   } else if (face_type == FACE_TYPE_RASTERIZED) {
-    rasterized_primitive_faces.push_back(f); 
+    rasterized_primitive_faces.push_back(f);
   } else {
     assert (face_type == FACE_TYPE_SUBDIVIDED);
     subdivided_quads.push_back(f);
@@ -130,10 +130,10 @@ void Mesh::removeFaceEdges(Face *f) {
   Vertex *c = ec->getStartVertex();
   Vertex *d = ed->getStartVertex();
   // remove elements from master lists
-  edges.erase({a,b}); 
-  edges.erase({b,c}); 
-  edges.erase({c,d}); 
-  edges.erase({d,a}); 
+  edges.erase({a,b});
+  edges.erase({b,c});
+  edges.erase({c,d});
+  edges.erase({d,a});
   // clean up memory
   delete ea;
   delete eb;
@@ -151,14 +151,14 @@ Edge* Mesh::getEdge(Vertex *a, Vertex *b) const {
 }
 
 Vertex* Mesh::getChildVertex(Vertex *p1, Vertex *p2) const {
-  vphashtype::const_iterator iter = vertex_parents.find({p1,p2}); 
+  vphashtype::const_iterator iter = vertex_parents.find({p1,p2});
   if (iter == vertex_parents.end()) return nullptr;
-  return iter->second; 
+  return iter->second;
 }
 
 void Mesh::setParentsChild(Vertex *p1, Vertex *p2, Vertex *child) {
   assert (vertex_parents.find({p1,p2}) == vertex_parents.end());
-  vertex_parents[{p1,p2}] = child; 
+  vertex_parents[{p1,p2}] = child;
 }
 
 //
@@ -239,24 +239,24 @@ void Mesh::Load(ArgParser *_args) {
       float r,g,b;
       objfile >> token;
       if (token == "diffuse") {
-	objfile >> r >> g >> b;
-	diffuse = {r,g,b};
+  objfile >> r >> g >> b;
+  diffuse = {r,g,b};
       } else {
-	assert (token == "texture_file");
-	objfile >> texture_file;
-	// prepend the directory name
-	texture_file = args->path + '/' + texture_file;
+  assert (token == "texture_file");
+  objfile >> texture_file;
+  // prepend the directory name
+  texture_file = args->path + '/' + texture_file;
       }
-      Vec3f reflective,emitted;      
+      Vec3f reflective,emitted;
       objfile >> token >> r >> g >> b;
       assert (token == "reflective");
       reflective = {r,g,b};
       float roughness = 0;
       objfile >> token;
       if (token == "roughness") {
-	objfile >> roughness;
-	objfile >> token;
-      } 
+  objfile >> roughness;
+  objfile >> token;
+      }
       assert (token == "emitted");
       objfile >> r >> g >> b;
       emitted = {r,g,b};
@@ -276,7 +276,7 @@ void Mesh::Load(ArgParser *_args) {
     float max_dim = bbox->maxDim();
     Vec3f camera_position = point_of_interest + Vec3f{0,0,4*max_dim};
     Vec3f up{0,1,0};
-    camera = new PerspectiveCamera(camera_position, point_of_interest, up, 20 * M_PI/180.0);    
+    camera = new PerspectiveCamera(camera_position, point_of_interest, up, 20 * M_PI/180.0);
   }
 }
 
@@ -314,10 +314,7 @@ void Mesh::Subdivision() {
   for (auto fp: tmp) {
     Face &f{*fp};
 
-    Vertex *a = f[0];
-    Vertex *b = f[1];
-    Vertex *c = f[2];
-    Vertex *d = f[3];
+    auto [a, b, c, d]{f.getVertices()};
     // add new vertices on the edges
     Vertex *ab = AddEdgeVertex(a,b);
     Vertex *bc = AddEdgeVertex(b,c);

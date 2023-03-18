@@ -28,7 +28,7 @@ AMD Radeon(TM) RX Vega 10 Graphics
 
 
 
-SELF GRADING TOTAL:  [ 23 / 20 ]
+SELF GRADING TOTAL:  [ 22.5 / 20 ]
 
 
 < Please insert notes on the implementation, known bugs, extra credit
@@ -60,7 +60,7 @@ EXTRA CREDIT: SAMPLING [ 1 ]
 1 point for stratified sampling of pixel in image plane
 1 point for stratified sampling of soft shadows
 includes discussion of performance/quality
-Stratified sampling of screen space implemented. Good antialiasing quality and performance.
+Stratified sampling of soft shadows implemented. Good quality and performance. The time it takes is very close to random samping but produces less noise in the soft shadows.
 
 
 OTHER DISTRIBUTION RAY TRACING EXTRA CREDIT [ 0 ]
@@ -75,16 +75,17 @@ Description of method in README.txt.
 RADIOSITY SOLVER [ 3 / 3 ]
 May be iterative (solution fades in) or done by inverting the form
 factor matrix.
+The solver is iterative.
 
 
-FORM FACTORS WITH VISIBILITY / OCCLUSION RAY CASTING [ 1 / 1 ]
+FORM FACTORS WITH VISIBILITY / OCCLUSION RAY CASTING [ 0.5 / 1 ]
   ./render -size 300 150 -input l.obj
   ./render -size 300 150 -input l.obj -num_form_factor_samples 100
   ./render -size 300 150 -input l.obj -num_shadow_samples 1
   ./render -size 300 150 -input l.obj -num_form_factor_samples 10 -num_shadow_samples 1
   ./render -size 200 200 -input cornell_box_diffuse_sphere.obj -sphere_rasterization 16 12
   ./render -size 200 200 -input cornell_box_diffuse_sphere.obj -sphere_rasterization 16 12 -num_shadow_samples 1
-
+See known bugs section.
 
 RADIOSITY EXTRA CREDIT [ 0 ]
 1 point for ambient term in radiosity
@@ -115,25 +116,25 @@ from radiosity.  2 points extra credit.
   ./render -size 200 200 -input cornell_box_diffuse_sphere.obj -num_photons_to_shoot 500000 -num_shadow_samples 500 -num_photons_to_collect 500
 
 
-OTHER EXTRA CREDIT [ ?? ]
+OTHER EXTRA CREDIT [ 6 ]
 1-2 points for new test scene or visualization
 1 point for writing the ray traced image to a file
 1-3 points extra credit for performance improvements
 2-5 points for irradiance caching
 
-2 points: New test scene: tea_table.obj (See Note 1 and 2)
-1 point: Rendering to image file (See Note 3)
+2 points: New test scene: tea_table.obj (See Note 1)
+1 point: Rendering to image file (See Note 2)
 3 points: Performance improvements: Multithreading when writing to file
 
 <Insert instructions for use and test cases and sample output as appropriate.>
 
 Note 1: Sample Render
-  A render is included as tea_table.png (in ./img). It is converted from an output ppm file to reduce file size. Render settings: size 640 360, 4 bounces, 36 AA samples, 4 shadow samples
-Note 2:
-  The OpenGL display may be incorrect for certain faces of the model. You can ignore them. The model contains no errors and the rendered results are correct.
-Note 3: How To Render To File
+  A render is included as tea_table.png (in ./img). It is converted from an output ppm file to reduce file size. Render settings: size 640 360, 16 AA samples, 4 shadow samples, 4 bounces
+Note 2: How To Render To File
   Press Ctrl + S in the main window. Follow the prompts in the standard output. You can hit Enter to select the default option. The program will hang during rendering.
 
 
 KNOWN BUGS IN YOUR CODE
 Please be concise!
+
+The radiosity render of cornell_box_diffuse_sphere produces incorrect brightness.

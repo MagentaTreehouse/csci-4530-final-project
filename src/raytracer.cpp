@@ -155,9 +155,28 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
   return TraceRayImpl(ray, hit, ambientLt, depth,
     [&] (const Face &f, const Vec3f &pt, auto shadeLocal) { // soft shadows
       Vec3f directIllumSum{};
-      for (int i{}; i < sSamp; ++i)
-        directIllumSum += directIllum(pt, f.RandomPoint() - pt, shadeLocal);
-      return 1. / sSamp * directIllumSum;
+      auto vs{f.getVertices()};
+      const auto
+        &a{vs[0]->get()},
+        &b{vs[1]->get()},
+        &c{vs[2]->get()},
+        &d{vs[3]->get()};
+      auto sampleN{f.sampleLayout(sSamp)};
+      for (std::size_t i{}; i < sampleN[0]; ++i)
+        for (std::size_t j{}; j < sampleN[1]; ++j) {
+          float s[]{1.f * i / sampleN[0], 1.f * (i + 1) / sampleN[0]};
+          float t[]{1.f * j / sampleN[1], 1.f * (j + 1) / sampleN[1]};
+          auto lerp{[] (const auto &a, const auto &b, auto t) {return a * t + b * (1 - t);}};
+          directIllumSum +=
+            directIllum(pt,
+              randPoint(
+                lerp(lerp(a, b, s[0]), lerp(d, c, s[0]), t[0]),
+                lerp(lerp(a, b, s[1]), lerp(d, c, s[1]), t[0]),
+                lerp(lerp(a, b, s[1]), lerp(d, c, s[1]), t[1]),
+                lerp(lerp(a, b, s[0]), lerp(d, c, s[0]), t[1])
+              ) - pt, shadeLocal);
+        }
+      return 1. / (sampleN[0] * sampleN[1]) * directIllumSum;
     }, vis);
   }
 }

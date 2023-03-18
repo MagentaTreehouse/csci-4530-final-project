@@ -1,6 +1,7 @@
 #ifndef _FACE_H_
 #define _FACE_H_
 
+#include <array>
 #include "edge.h"
 #include "ray.h"
 #include "vertex.h"
@@ -30,19 +31,30 @@ public:
     assert(0);
     exit(0);
   }
+  [[nodiscard]] auto getVertices() const {
+    assert(edge);
+    auto e{edge};
+    return std::array{
+      e->getStartVertex(),
+      (e = e->getNext())->getStartVertex(),
+      (e = e->getNext())->getStartVertex(),
+      e->getNext()->getStartVertex()
+    };
+  }
   [[nodiscard]] Edge* getEdge() const { 
     assert (edge != nullptr);
     return edge; 
   }
   [[nodiscard]] Vec3f computeCentroid() const {
-    return 0.25f * ((*this)[0]->get() +
-                    (*this)[1]->get() +
-                    (*this)[2]->get() +
-                    (*this)[3]->get());
+    auto vs{getVertices()};
+    return 0.25f * (vs[0]->get() +
+                    vs[1]->get() +
+                    vs[2]->get() +
+                    vs[3]->get());
   }
   [[nodiscard]] Material* getMaterial() const { return material; }
   [[nodiscard]] float getArea() const;
-  [[nodiscard]] Vec3f RandomPoint() const;
+  [[nodiscard]] Vec3f randPoint() const;
   [[nodiscard]] Vec3f computeNormal() const;
 
   // =========
@@ -56,6 +68,8 @@ public:
   // ==========
   // RAYTRACING
   bool intersect(const Ray &r, Hit &h, bool intersect_backfacing) const;
+  /* Intended to be a suggestion for sampling layout for rectangular faces */
+  [[nodiscard]] std::array<std::size_t, 2> sampleLayout(std::size_t n) const;
 
   // =========
   // RADIOSITY
@@ -81,6 +95,7 @@ protected:
   Material *material;
 };
 
+Vec3f randPoint(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Vec3f &d);
 // ===========================================================
 
 #endif

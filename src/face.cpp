@@ -7,11 +7,13 @@
 // =========================================================================
 
 float Face::getArea() const {
-  Vec3f a = (*this)[0]->get();
-  Vec3f b = (*this)[1]->get();
-  Vec3f c = (*this)[2]->get();
-  Vec3f d = (*this)[3]->get();
-  return 
+  auto vs{getVertices()};
+  const auto
+    &a = vs[0]->get(),
+    &b = vs[1]->get(),
+    &c = vs[2]->get(),
+    &d = vs[3]->get();
+  return
     AreaOfTriangle(DistanceBetweenTwoPoints(a,b),
                    DistanceBetweenTwoPoints(a,c),
                    DistanceBetweenTwoPoints(b,c)) +
@@ -22,16 +24,31 @@ float Face::getArea() const {
 
 // =========================================================================
 
-Vec3f Face::RandomPoint() const {
-  Vec3f a = (*this)[0]->get();
-  Vec3f b = (*this)[1]->get();
-  Vec3f c = (*this)[2]->get();
-  Vec3f d = (*this)[3]->get();
+Vec3f Face::randPoint() const {
+  auto vs{getVertices()};
+  return ::randPoint(vs[0]->get(), vs[1]->get(), vs[2]->get(), vs[3]->get());
+}
 
+Vec3f randPoint(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Vec3f &d) {
   float s = ArgParser::rand(); // random real in [0,1]
   float t = ArgParser::rand(); // random real in [0,1]
-
   return s*t*a + s*(1-t)*b + (1-s)*t*d + (1-s)*(1-t)*c;
+}
+
+std::array<std::size_t, 2> Face::sampleLayout(std::size_t n) const {
+  auto vs{getVertices()};
+  const auto
+    &a = vs[0]->get(),
+    &b = vs[1]->get(),
+    &c = vs[2]->get();
+  const float ratio{DistanceBetweenTwoPoints(b, c) / DistanceBetweenTwoPoints(a, b)};
+  const auto samplesAB{std::sqrt(n / ratio)};
+  if (samplesAB > n) return {n, 1};
+  if (samplesAB < 1) return {1, n};
+  return {
+    static_cast<std::size_t>(samplesAB),
+    static_cast<std::size_t>(samplesAB * ratio)
+  };
 }
 
 // =========================================================================
@@ -39,10 +56,7 @@ Vec3f Face::RandomPoint() const {
 
 bool Face::intersect(const Ray &r, Hit &h, bool intersect_backfacing) const {
   // intersect with each of the subtriangles
-  Vertex *a = (*this)[0];
-  Vertex *b = (*this)[1];
-  Vertex *c = (*this)[2];
-  Vertex *d = (*this)[3];
+  auto [a, b, c, d]{getVertices()};
   return triangle_intersect(r,h,a,b,c,intersect_backfacing) || triangle_intersect(r,h,a,c,d,intersect_backfacing);
 }
 
@@ -50,30 +64,30 @@ bool Face::triangle_intersect(const Ray &r, Hit &h, Vertex *a, Vertex *b, Vertex
 
   // compute the intersection with the plane of the triangle
   Hit h2 = h;
-  if (!plane_intersect(r,h2,intersect_backfacing)) return 0;  
+  if (!plane_intersect(r,h2,intersect_backfacing)) return 0;
 
   // figure out the barycentric coordinates:
   Vec3f Ro = r.getOrigin();
   Vec3f Rd = r.getDirection();
-  // [ ax-bx   ax-cx  Rdx ][ beta  ]     [ ax-Rox ] 
-  // [ ay-by   ay-cy  Rdy ][ gamma ]  =  [ ay-Roy ] 
-  // [ az-bz   az-cz  Rdz ][ t     ]     [ az-Roz ] 
+  // [ ax-bx   ax-cx  Rdx ][ beta  ]     [ ax-Rox ]
+  // [ ay-by   ay-cy  Rdy ][ gamma ]  =  [ ay-Roy ]
+  // [ az-bz   az-cz  Rdz ][ t     ]     [ az-Roz ]
   // solve for beta, gamma, & t using Cramer's rule
-  
+
   float detA = Matrix::det3x3(a->get().x()-b->get().x(),a->get().x()-c->get().x(),Rd.x(),
                               a->get().y()-b->get().y(),a->get().y()-c->get().y(),Rd.y(),
                               a->get().z()-b->get().z(),a->get().z()-c->get().z(),Rd.z());
 
   if (fabs(detA) <= 0.000001) return 0;
   assert (fabs(detA) >= 0.000001);
-  
+
   float beta = Matrix::det3x3(a->get().x()-Ro.x(),a->get().x()-c->get().x(),Rd.x(),
                               a->get().y()-Ro.y(),a->get().y()-c->get().y(),Rd.y(),
                               a->get().z()-Ro.z(),a->get().z()-c->get().z(),Rd.z()) / detA;
   float gamma = Matrix::det3x3(a->get().x()-b->get().x(),a->get().x()-Ro.x(),Rd.x(),
                                a->get().y()-b->get().y(),a->get().y()-Ro.y(),Rd.y(),
                                a->get().z()-b->get().z(),a->get().z()-Ro.z(),Rd.z()) / detA;
-  
+
   if (beta >= -0.00001 && beta <= 1.00001 &&
       gamma >= -0.00001 && gamma <= 1.00001 &&
       beta + gamma <= 1.00001) {
@@ -111,7 +125,7 @@ bool Face::plane_intersect(const Ray &r, Hit &h, bool intersect_backfacing) cons
 
   if (denom == 0) return 0;  // parallel to plane
 
-  if (!intersect_backfacing && normal.Dot3(r.getDirection()) >= 0) 
+  if (!intersect_backfacing && normal.Dot3(r.getDirection()) >= 0)
     return 0; // hit the backside
 
   float t = numer / denom;
@@ -125,10 +139,12 @@ bool Face::plane_intersect(const Ray &r, Hit &h, bool intersect_backfacing) cons
 
 Vec3f Face::computeNormal() const {
   // note: this face might be non-planar, so average the two triangle normals
-  Vec3f a = (*this)[0]->get();
-  Vec3f b = (*this)[1]->get();
-  Vec3f c = (*this)[2]->get();
-  Vec3f d = (*this)[3]->get();
+  auto vs{getVertices()};
+  const auto
+    &a = vs[0]->get(),
+    &b = vs[1]->get(),
+    &c = vs[2]->get(),
+    &d = vs[3]->get();
   return 0.5f * (ComputeNormal(a,b,c) + ComputeNormal(a,c,d));
 }
 

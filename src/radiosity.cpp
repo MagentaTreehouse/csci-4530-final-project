@@ -168,7 +168,9 @@ void CollectFacesWithVertex(Vertex *have, Face *f, std::vector<Face*> &faces) {
   for (unsigned int i = 0; i < faces.size(); i++) {
     if (faces[i] == f) return;
   }
-  if (have != (*f)[0] && have != (*f)[1] && have != (*f)[2] && have != (*f)[3]) return;
+  if (auto vs{f->getVertices()};
+      have != vs[0] && have != vs[1] && have != vs[2] && have != vs[3])
+    return;
   faces.push_back(f);
   for (int i = 0; i < 4; i++) {
     Edge *ea = f->getEdge()->getOpposite();
@@ -244,16 +246,17 @@ void Radiosity::packMesh(float* &current) {
       1. * (args->mesh_data->render_mode == RENDER_FORM_FACTORS && i == max_undistributed_patch), 0, 0};
 
     // 4 corner vertices
-    const Vec3f &a_pos = ((*f)[0])->get();
+    auto vs{f->getVertices()};
+    const Vec3f &a_pos = vs[0]->get();
     Vec3f a_color = setupHelperForColor(f,i,0);
     a_color = {linear_to_srgb(a_color.r()),linear_to_srgb(a_color.g()),linear_to_srgb(a_color.b())};
-    const Vec3f &b_pos = ((*f)[1])->get();
+    const Vec3f &b_pos = vs[1]->get();
     Vec3f b_color = setupHelperForColor(f,i,1);
     b_color = {linear_to_srgb(b_color.r()),linear_to_srgb(b_color.g()),linear_to_srgb(b_color.b())};
-    const Vec3f &c_pos = ((*f)[2])->get();
+    const Vec3f &c_pos = vs[2]->get();
     Vec3f c_color = setupHelperForColor(f,i,2);
     c_color = {linear_to_srgb(c_color.r()),linear_to_srgb(c_color.g()),linear_to_srgb(c_color.b())};
-    const Vec3f &d_pos = ((*f)[3])->get();
+    const Vec3f &d_pos = vs[3]->get();
     Vec3f d_color = setupHelperForColor(f,i,3);
     d_color = {linear_to_srgb(d_color.r()),linear_to_srgb(d_color.g()),linear_to_srgb(d_color.b())};
 
