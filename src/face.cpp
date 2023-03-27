@@ -14,25 +14,33 @@ float Face::getArea() const {
     &c = vs[2]->get(),
     &d = vs[3]->get();
   return
-    AreaOfTriangle(DistanceBetweenTwoPoints(a,b),
-                   DistanceBetweenTwoPoints(a,c),
-                   DistanceBetweenTwoPoints(b,c)) +
-    AreaOfTriangle(DistanceBetweenTwoPoints(c,d),
-                   DistanceBetweenTwoPoints(a,d),
-                   DistanceBetweenTwoPoints(a,c));
+    AreaOfTriangle(
+      DistanceBetweenTwoPoints(a,b),
+      DistanceBetweenTwoPoints(a,c),
+      DistanceBetweenTwoPoints(b,c)
+    ) +
+    AreaOfTriangle(
+      DistanceBetweenTwoPoints(c,d),
+      DistanceBetweenTwoPoints(a,d),
+      DistanceBetweenTwoPoints(a,c)
+    );
 }
 
 // =========================================================================
 
 Vec3f Face::randPoint() const {
-  auto vs{getVertices()};
-  return ::randPoint(vs[0]->get(), vs[1]->get(), vs[2]->get(), vs[3]->get());
+  return ::randPoint(getVertices());
 }
 
-Vec3f randPoint(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Vec3f &d) {
-  float s = ArgParser::rand(); // random real in [0,1]
-  float t = ArgParser::rand(); // random real in [0,1]
-  return s*t*a + s*(1-t)*b + (1-s)*t*d + (1-s)*(1-t)*c;
+Vec3f randPoint(const std::array<Vertex *, 4> &vs, float offsetS, float offsetT, float scaleS, float scaleT) {
+  const auto
+    &a{vs[0]->get()},
+    &b{vs[1]->get()},
+    &c{vs[2]->get()},
+    &d{vs[3]->get()};
+  float s = ArgParser::rand() * scaleS + offsetS; // random real in [0,1]
+  float t = ArgParser::rand() * scaleT + offsetT; // random real in [0,1]
+  return s*t*a + (1-s)*t*b + s*(1-t)*d + (1-s)*(1-t)*c;
 }
 
 std::array<std::size_t, 2> Face::sampleLayout(std::size_t n) const {

@@ -22,7 +22,7 @@ public:
 
   // =========
   // ACCESSORS
-  [[nodiscard]] Vertex* operator[](int i) const { 
+  [[nodiscard]] Vertex* operator[](int i) const {
     assert (edge != nullptr);
     if (i==0) return edge->getStartVertex();
     if (i==1) return edge->getNext()->getStartVertex();
@@ -41,9 +41,9 @@ public:
       e->getNext()->getStartVertex()
     };
   }
-  [[nodiscard]] Edge* getEdge() const { 
+  [[nodiscard]] Edge* getEdge() const {
     assert (edge != nullptr);
-    return edge; 
+    return edge;
   }
   [[nodiscard]] Vec3f computeCentroid() const {
     auto vs{getVertices()};
@@ -95,7 +95,7 @@ protected:
   Material *material;
 };
 
-Vec3f randPoint(const Vec3f &a, const Vec3f &b, const Vec3f &c, const Vec3f &d);
+Vec3f randPoint(const std::array<Vertex *, 4> &vs, float offsetS = 0, float offsetT = 0, float scaleS = 1, float scaleT = 1);
 // ===========================================================
 
 #endif
