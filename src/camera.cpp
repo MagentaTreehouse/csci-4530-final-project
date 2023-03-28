@@ -1,4 +1,8 @@
 #include <algorithm>
+#include <math.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 
 #include "camera.h"
 #include "meshdata.h"
@@ -8,6 +12,9 @@
 // ====================================================================
 // CONSTRUCTORS
 // ====================================================================
+
+
+
 
 Camera::Camera(const Vec3f &c, const Vec3f &poi, const Vec3f &u):
   point_of_interest{poi},
