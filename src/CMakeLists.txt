@@ -225,7 +225,7 @@ endif()
 # COMPILATION FLAGS
 
 if(MSVC)
-  target_compile_options(${my_executable} PRIVATE /W4 /WX)
+  target_compile_options(${my_executable} PRIVATE /W4)
 else()
   target_compile_options(${my_executable} PRIVATE -Wall -Wextra -Wpedantic)
 endif()

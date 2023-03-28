@@ -1,5 +1,6 @@
 #include "vertex.h"
 #include "edge.h"
+#include "utils.h"
 
 // EDGE CONSTRUCTOR
 Edge::Edge(Vertex *vs, Vertex *ve, Face *f) {
@@ -21,6 +22,5 @@ Edge::~Edge() {
 }
 
 float Edge::Length() const {
-  Vec3f diff = start_vertex->get() - end_vertex->get();
-  return diff.Length();
+  return DistanceBetweenTwoPoints(start_vertex->get(), end_vertex->get());
 }

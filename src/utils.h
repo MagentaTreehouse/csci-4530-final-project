@@ -40,13 +40,13 @@ inline float linear_to_srgb(float x) {
 inline float srgb_to_linear(float x) {
   return x <= 0.04045f?
     x/12.92f :
-    pow((x+SRGB_ALPHA)/(1+SRGB_ALPHA),2.4);
+    static_cast<float>(pow((x+SRGB_ALPHA)/(1+SRGB_ALPHA),2.4));
 }
 
 // =========================================================================
 // utility functions 
 inline float DistanceBetweenTwoPoints(const Vec3f &p1, const Vec3f &p2) {
-  return (p1-p2).Length();
+  return static_cast<float>((p1-p2).Length());
 }
 
 inline float AreaOfTriangle(float a, float b, float c) {
