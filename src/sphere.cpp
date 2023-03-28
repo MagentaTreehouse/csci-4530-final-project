@@ -30,7 +30,7 @@ bool Sphere::intersect(const Ray &r, Hit &h) const {
 
     discrim{b * b - 4 * a * c},
     rtDiscrim{std::sqrt(discrim)},
-    t_[2]{(-b + rtDiscrim) / (2 * a), (-b - rtDiscrim) / (2 * a)};
+    t_[]{(-b + rtDiscrim) / (2 * a), (-b - rtDiscrim) / (2 * a)};
 
   if (const auto tPrev{h.getT()};
       !((t_[0] > EPSILON) & (t_[1] < tPrev) & ((t_[1] > EPSILON) | (t_[0] < tPrev))))

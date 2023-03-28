@@ -51,7 +51,7 @@ void ArgParser::DefaultValues() {
   mesh_data->num_shadow_samples = 0;
   mesh_data->num_antialias_samples = 1;
   mesh_data->num_glossy_samples = 1;
-  mesh_data->ambient_light = {0.1f,0.1f,0.1f};
+  mesh_data->ambient_light = {0.f,0.f,0.f};
   mesh_data->intersect_backfacing = false;
 
   // PHOTON MAPPING PARAMETERS

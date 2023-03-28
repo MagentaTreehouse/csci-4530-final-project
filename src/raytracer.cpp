@@ -84,24 +84,21 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, in
   // ----------------------------------------------
   // direct illumination
   for (const Face *f: mesh->getLights()) {
-    const Vec3f ltColor{f->getMaterial()->getEmittedColor() * f->getArea()};
-    // ===========================================
-    // ASSIGNMENT:  ADD SHADOW & SOFT SHADOW LOGIC
-    // ===========================================
-    // add the lighting contribution from this particular light at this point
     answer += directIllum(*f, point,
       [&] (const Vec3f &ptLtSample) {
-        const float dist = ptLtSample.Length();
-        const Vec3f ltIrradiance{1 / (float(M_PI)*dist*dist) * ltColor};
-        return m->Shade(ray, hit, ptLtSample.Normalized(), ltIrradiance);
+        const float distSqr = ptLtSample.Dot3(ptLtSample);
+        const float dist = std::sqrt(distSqr);
+        // assuming normal.Length() == 1
+        float cosTheta = ptLtSample.Dot3(normal) / dist;
+        float cosThetaP = (-ptLtSample).Dot3(f->computeNormal()) / dist;
+        const Vec3f ltColor{f->getMaterial()->getEmittedColor() * f->getArea()};
+        return m->Shade(ray, hit, ptLtSample.Normalized(),
+          1 / distSqr * cosTheta * cosThetaP * ltColor);
       });
   }
 
   // ----------------------------------------------
   // add contribution from reflection, if the surface is shiny
-  // =================================
-  // ASSIGNMENT:  ADD REFLECTIVE LOGIC
-  // =================================
   if (m->getReflectiveColor() != Vec3f{} && depth) {
     const Ray r{point, Reflection(d, normal)};
     Hit h{};
@@ -139,24 +136,24 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
   switch (int sSamp{md.num_shadow_samples}; sSamp * md.num_antialias_samples) {
   case 0:
   return TraceRayImpl(ray, hit, ambientLt, depth,
-    [] (const Face &f, const Vec3f &pt, auto shadeLocal) { // no shadows considered
-      const auto ptLtC{f.computeCentroid() - pt};
+    [] (const Face &lt, const Vec3f &pt, auto shadeLocal) { // no shadows considered
+      const auto ptLtC{lt.computeCentroid() - pt};
       if constexpr (Visualize) RayTree::AddShadowSegment({pt, ptLtC}, 0, 1);
       return shadeLocal(ptLtC);
     }, vis);
 
   case 1:
   return TraceRayImpl(ray, hit, ambientLt, depth,
-    [&] (const Face &f, const Vec3f &pt, auto shadeLocal) { // "decay" to hard shadows
-      return directIllum(pt, f.computeCentroid() - pt, shadeLocal);
+    [&] (const Face &lt, const Vec3f &pt, auto shadeLocal) { // "decay" to hard shadows
+      return directIllum(pt, lt.computeCentroid() - pt, shadeLocal);
     }, vis);
 
   default:
   return TraceRayImpl(ray, hit, ambientLt, depth,
-    [&] (const Face &f, const Vec3f &pt, auto shadeLocal) { // soft shadows
+    [&] (const Face &lt, const Vec3f &pt, auto shadeLocal) { // soft shadows
       Vec3f directIllumSum{};
-      const auto vs{f.getVertices()};
-      const auto sampleN{f.sampleLayout(sSamp)};
+      const auto vs{lt.getVertices()};
+      const auto sampleN{lt.sampleLayout(sSamp)};
       const float scaleI{1.f / sampleN[0]}, scaleJ{1.f / sampleN[1]};
       for (std::size_t i{}; i < sampleN[0]; ++i)
         for (std::size_t j{}; j < sampleN[1]; ++j) {
