@@ -45,7 +45,7 @@ inline float srgb_to_linear(float x) {
 
 // =========================================================================
 // utility functions 
-constexpr float DistanceBetweenTwoPoints(const Vec3f &p1, const Vec3f &p2) {
+inline float DistanceBetweenTwoPoints(const Vec3f &p1, const Vec3f &p2) {
   return (p1-p2).Length();
 }
 

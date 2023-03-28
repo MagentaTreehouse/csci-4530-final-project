@@ -64,11 +64,11 @@ public:
 
   // ------------------------
   // COMMON VECTOR OPERATIONS
-  [[nodiscard]] constexpr double Length() const noexcept {
+  [[nodiscard]] double Length() const noexcept {
     return sqrt(data[0]*data[0]+data[1]*data[1]+data[2]*data[2]); }
-  constexpr void Normalize() noexcept {
+  void Normalize() noexcept {
     if (auto len{Length()}) (*this) /= len; }
-  [[nodiscard]] constexpr Vec3f Normalized() const noexcept {
+  [[nodiscard]] Vec3f Normalized() const noexcept {
     if (auto len{Length()}) return {data[0] / len, data[1] / len, data[2] / len};
     return *this; }
   constexpr void Negate() noexcept { (*this) *= -1; }
@@ -197,9 +197,9 @@ public:
 
   // ------------------------
   // COMMON VECTOR OPERATIONS
-  [[nodiscard]] constexpr double Length() const noexcept {
+  [[nodiscard]] double Length() const noexcept {
     return sqrt(data[0]*data[0]+data[1]*data[1]+data[2]*data[2]+data[3]*data[3]); }
-  constexpr void Normalize() noexcept {
+  void Normalize() noexcept {
     double l = Length();
     if (l > 0) {
       data[0] /= l;
