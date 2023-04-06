@@ -111,6 +111,22 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, in
   return answer;
 }
 
+//shoot at random direction in a hemisphere based on a normal
+Vec3f HemisphereRandom(Vec3f normal) {
+    float phi = ArgParser::rand() * 2 * M_PI;
+    float theta = ArgParser::rand() * M_PI / 2;
+    Vec3f dir = Vec3f(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
+    float x = normal.x();
+    float y = normal.y();
+    float z = normal.z();
+    float t[16] = { (y / sqrt(x * x + y * y)),  -x / sqrt(x * x + y * y),       0,                  0,
+                    x * z / sqrt(x * x + y * y), y * z / sqrt(x * x + y * y), -sqrt(x * x + y * y), 0,
+                    x,                              y,                          z,                  1 };
+    Matrix transform = Matrix(t);
+
+    return transform * dir;
+}
+
 
 template<bool Visualize>
 Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
