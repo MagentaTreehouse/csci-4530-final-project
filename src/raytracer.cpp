@@ -9,7 +9,6 @@
 #include "meshdata.h"
 #include "face.h"
 #include "primitive.h"
-#include "photon_mapping.h"
 #include "camera.h"
 #include "image.h"
 
@@ -46,112 +45,117 @@ bool RayTracer::CastRay(const Ray &ray, Hit &h, bool use_rasterized_patches) con
 }
 
 
-// does the recursive (shadow rays & recursive rays) work
+// shoot at random direction in a hemisphere based on a normal
+Vec3f HemisphereRandom(std::tuple<float, float> unitSqrPt, Vec3f normal) {
+  auto [px, py]{unitSqrPt};
+  float r{std::sqrt(1.f - px * px)};
+  float phi = 2 * M_PI * py;
+  Vec3f dir{r * std::cos(phi), r * std::sin(phi), px};
+  if (std::abs(normal.z() - 1) < EPSILON)
+    return dir;
+  float x = normal.x();
+  float y = normal.y();
+  float z = normal.z();
+  auto sqrt{std::sqrt(x * x + y * y)};
+  float t[]{
+    y / sqrt,     -x / sqrt,    0,      0,
+    x * z / sqrt, y * z / sqrt, -sqrt,  0,
+    x,            y,            z,      0,
+    0,            0,            0,      1
+  };
+  return Matrix{t} * dir;
+}
+
+
 template<class F, bool Visualize>
-Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, const Vec3f &ambient, int depth, F directIllum, std::bool_constant<Visualize>) const {
-  hit = {};
-  // First cast a ray and see if we hit anything.
-  // if there is no intersection, simply return the background color
-  if (!CastRay(ray,hit,false)) {
-    return {
-      srgb_to_linear(mesh->background_color.r()),
-      srgb_to_linear(mesh->background_color.g()),
-      srgb_to_linear(mesh->background_color.b())
-    };
-  }
-
-  // otherwise decide what to do based on the material
-  const Material *m{hit.getMaterial()};
-  assert (m != nullptr);
-
-  // rays coming from the light source are set to white, don't bother to ray trace further.
-  if (m->getEmittedColor().Length() > 0.001) {
-    return {1,1,1};
-  }
-
+Vec3f RayTracer::shade(const Ray &ray, Hit &hit, const Material &m, int depth, F directIllum, std::bool_constant<Visualize>) const {
   const Vec3f &d{ray.getDirection()};
   const Vec3f &normal{hit.getNormal()};
   const Vec3f point{ray.pointAtParameter(hit.getT())};
+  const Vec3f diffuse_color{m.getDiffuseColor(hit.get_s(),hit.get_t())};
 
-  // ----------------------------------------------
-  // start with the indirect light (ambient light)
-  const Vec3f diffuse_color{m->getDiffuseColor(hit.get_s(),hit.get_t())};
-  Vec3f answer{args->mesh_data->gather_indirect?
-    diffuse_color * (photon_mapping->GatherIndirect(point, normal, d) + ambient) : // photon mapping for more accurate indirect light
-    diffuse_color * ambient // the usual ray tracing hack for indirect light
-  };
+  Vec3f answer{};
 
-  // ----------------------------------------------
   // direct illumination
-  for (const Face *f: mesh->getLights()) {
+  for (const Face *f: mesh->getLights())
     answer += directIllum(*f, point,
       [&] (const Vec3f &ptLtSample) {
-        const float distSqr = ptLtSample.Dot3(ptLtSample);
-        const float dist = std::sqrt(distSqr);
-        // assuming normal.Length() == 1
-        float cosTheta = ptLtSample.Dot3(normal) / dist;
-        float cosThetaP = (-ptLtSample).Dot3(f->computeNormal()) / dist;
-        const Vec3f ltColor{f->getMaterial()->getEmittedColor() * f->getArea()};
-        return m->Shade(ray, hit, ptLtSample.Normalized(),
-          1 / distSqr * cosTheta * cosThetaP * ltColor);
+        const float
+          distSqr = ptLtSample.Dot3(ptLtSample),
+          dist = std::sqrt(distSqr),
+          cosTheta = std::max(ptLtSample.Dot3(normal), 0.) / dist,
+          cosThetaP = std::max((-ptLtSample).Dot3(f->computeNormal()), 0.) / dist;
+        const Vec3f ltColor{f->getMaterial()->getEmittedColor()};
+        return cosTheta * cosThetaP / distSqr * f->getArea() * ltColor * m.brdf(hit, d, ptLtSample);
       });
+
+  // indirect illumination
+  if (!depth) return answer;
+  auto dir{HemisphereRandom({static_cast<float>(ArgParser::rand()), static_cast<float>(ArgParser::rand())}, normal)};
+  const Ray r{point, dir};
+  Hit h{};
+  if (CastRay(r, h, false) && !h.getMaterial()->isEmitting()) {
+    if constexpr (Visualize) RayTree::AddReflectedSegment(r, 0, h.getT());
+    Vec3f ptLtSample{r.pointAtParameter(h.getT()) - point};
+    const float cosTheta = ptLtSample.Dot3(normal) / ptLtSample.Length();
+    answer += cosTheta * 2 * M_PI *
+      shade<F, Visualize>(r, h, *h.getMaterial(), depth - 1, directIllum, {}) *
+      diffuse_color * m.brdf(hit, d, ptLtSample);
   }
 
-  // ----------------------------------------------
   // add contribution from reflection, if the surface is shiny
-  if (m->getReflectiveColor() != Vec3f{} && depth) {
+  if (m.getReflectiveColor() != Vec3f{} && depth) {
     const Ray r{point, Reflection(d, normal)};
     Hit h{};
     answer +=
-      m->getReflectiveColor() *
-      TraceRayImpl<F, Visualize>(r, h, ambient, depth - 1, directIllum, {});
+      m.getReflectiveColor() *
+      TraceRayImpl<F, Visualize>(r, h, depth - 1, directIllum, {});
     if constexpr (Visualize) RayTree::AddReflectedSegment(r, 0, h.getT());
   }
 
   return answer;
 }
 
-//shoot at random direction in a hemisphere based on a normal
-Vec3f HemisphereRandom(Vec3f normal) {
-    float phi = ArgParser::rand() * 2 * M_PI;
-    float theta = ArgParser::rand() * M_PI / 2;
-    Vec3f dir = Vec3f(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
-    float x = normal.x();
-    float y = normal.y();
-    float z = normal.z();
-    float t[16] = { (y / sqrt(x * x + y * y)),  -x / sqrt(x * x + y * y),       0,                  0,
-                    x * z / sqrt(x * x + y * y), y * z / sqrt(x * x + y * y), -sqrt(x * x + y * y), 0,
-                    x,                              y,                          z,                  1 };
-    Matrix transform = Matrix(t);
 
-    return transform * dir;
+template<class F, bool Visualize>
+Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, int depth, F directIllum, std::bool_constant<Visualize>) const {
+  hit = {};
+  // First cast a ray and see if we hit anything.
+  // if there is no intersection, simply return the background color
+  if (!CastRay(ray,hit,false))
+    return {
+      srgb_to_linear(mesh->background_color.r()),
+      srgb_to_linear(mesh->background_color.g()),
+      srgb_to_linear(mesh->background_color.b())
+    };
+
+  // otherwise decide what to do based on the material
+  const Material *m{hit.getMaterial()};
+  assert (m != nullptr);
+  if (m->isEmitting())
+    return m->getEmittedColor();
+  return shade<F, Visualize>(ray, hit, *m, depth, directIllum, {});
 }
 
 
 template<bool Visualize>
 Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
   const auto &md{*args->mesh_data};
-  const Vec3f ambientLt{
-    md.ambient_light[0],
-    md.ambient_light[1],
-    md.ambient_light[2]
-  };
 
   // "shadow ray"
-  auto directIllum{[&] (const Vec3f &pt, const Vec3f &ptLt, auto shadeLocal) {
-    const Ray r{pt, ptLt};
+  auto directIllum{[&] (const Ray &r, auto shadeLocal) {
     Hit block{};
     CastRay(r, block, false);
     if constexpr (Visualize) RayTree::AddShadowSegment(r, 0, block.getT());
-    return block.getT() > 1 - EPSILON? shadeLocal(ptLt) : Vec3f{};
+    return block.getT() > 1 - EPSILON? shadeLocal(r.getDirection()) : Vec3f{};
   }};
 
-  auto vis{std::bool_constant<Visualize>{}};
+  std::bool_constant<Visualize> vis{};
   // The behavior of direct illumination calculation differs for certain values of shadow
   // samples and antialiasing samples
   switch (int sSamp{md.num_shadow_samples}; sSamp * md.num_antialias_samples) {
   case 0:
-  return TraceRayImpl(ray, hit, ambientLt, depth,
+  return TraceRayImpl(ray, hit, depth,
     [] (const Face &lt, const Vec3f &pt, auto shadeLocal) { // no shadows considered
       const auto ptLtC{lt.computeCentroid() - pt};
       if constexpr (Visualize) RayTree::AddShadowSegment({pt, ptLtC}, 0, 1);
@@ -159,13 +163,13 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
     }, vis);
 
   case 1:
-  return TraceRayImpl(ray, hit, ambientLt, depth,
+  return TraceRayImpl(ray, hit, depth,
     [&] (const Face &lt, const Vec3f &pt, auto shadeLocal) { // "decay" to hard shadows
-      return directIllum(pt, lt.computeCentroid() - pt, shadeLocal);
+      return directIllum({pt, lt.computeCentroid() - pt}, shadeLocal);
     }, vis);
 
   default:
-  return TraceRayImpl(ray, hit, ambientLt, depth,
+  return TraceRayImpl(ray, hit, depth,
     [&] (const Face &lt, const Vec3f &pt, auto shadeLocal) { // soft shadows
       Vec3f directIllumSum{};
       const auto vs{lt.getVertices()};
@@ -175,7 +179,7 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
         for (std::size_t j{}; j < sampleN[1]; ++j) {
           const float offsetI{1.f * i / sampleN[0]}, offsetJ{1.f * j / sampleN[1]};
           directIllumSum +=
-            directIllum(pt, randPoint(vs, offsetI, offsetJ, scaleI, scaleJ) - pt, shadeLocal);
+            directIllum({pt, randPoint(vs, offsetI, offsetJ, scaleI, scaleJ) - pt}, shadeLocal);
         }
       return 1. / (sampleN[0] * sampleN[1]) * directIllumSum;
     }, vis);
@@ -183,13 +187,10 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
 }
 
 
-// trace a ray through pixel (i,j) of the image an return the color
+// camera sampling, including antialiasing
+// trace a ray through pixel (i,j) of the image an return the radiance
 template<bool Visualize>
 Vec3f RayTracer::renderPixel(double i, double j) const {
-
-  // ==================================
-  // ASSIGNMENT: IMPLEMENT ANTIALIASING
-  // ==================================
   const auto &md{*args->mesh_data};
   const auto aa{static_cast<std::size_t>(std::sqrt(md.num_antialias_samples))};
   const auto
@@ -197,17 +198,17 @@ Vec3f RayTracer::renderPixel(double i, double j) const {
     i0{i + ds / 2},
     j0{j + ds / 2};
 
-  Vec3f colorSum{};
+  Vec3f sum{};
   for (std::size_t si{}; si < aa; ++si)
     for (std::size_t sj{}; sj < aa; ++sj) {
       const auto [x, y]{ToUnitSquare({i0 + ds * si, j0 + ds * sj})};
       const Ray r = args->mesh->camera->generateRay(x,y);
       Hit hit;
-      colorSum += TraceRay<Visualize>(r, hit, md.num_bounces);
+      sum += TraceRay<Visualize>(r, hit, md.num_bounces);
       if constexpr (Visualize) RayTree::AddMainSegment(r, 0, hit.getT());
     }
 
-  return 1. / (aa * aa) * colorSum;
+  return 1. / (aa * aa) * sum;
 }
 
 Vec3f VisualizeTraceRay(double i, double j) {
@@ -333,10 +334,11 @@ void RayTracer::renderToFile(const std::filesystem::path &fPath) const {
     for (int i{wStart}; i < wEnd; ++i)
       for (int j{hStart}; j < hEnd; ++j) {
         const auto p{renderPixel(i, j)};
-        auto toUint8{[] (float x) -> std::uint8_t {
+        auto viewTransform{[] (float x) -> std::uint8_t {
           return std::round(255 * std::min(linear_to_srgb(x), 1.f));
         }};
-        img.SetPixel(i, j, {toUint8(p.r()), toUint8(p.g()), toUint8(p.b())});
+        img.SetPixel(i, j,
+          {viewTransform(p.r()), viewTransform(p.g()), viewTransform(p.b())});
       }
   }};
   static constexpr int blockSize{128};

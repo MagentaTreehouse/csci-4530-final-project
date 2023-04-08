@@ -101,6 +101,11 @@ void Material::ComputeAverageTextureColor() {
   diffuseColor = {r,g,b};
 }
 
+Vec3f Material::brdf(const Hit &hit, const Vec3f &, const Vec3f &) const {
+  // currently only diffuse
+  return .5 / M_PI * getDiffuseColor(hit.get_s(),hit.get_t());
+}
+
 // ==================================================================
 // PHONG LOCAL ILLUMINATION
 
@@ -127,11 +132,13 @@ Vec3f Material::Shade(const Ray &ray, const Hit &hit,
   float dot_nl = n.Dot3(l);
   if (dot_nl < 0) dot_nl = 0;
   answer += lightColor * getDiffuseColor(hit.get_s(),hit.get_t()) * dot_nl;
+  if (reflectiveColor == Vec3f{})
+    return answer;
 
   // specular component (Phong)
   // ------------------
   // make up reasonable values for other Phong parameters
-  Vec3f specularColor = reflectiveColor;
+  const Vec3f &specularColor = reflectiveColor;
   float exponent = 100;
 
   // compute ideal reflection angle

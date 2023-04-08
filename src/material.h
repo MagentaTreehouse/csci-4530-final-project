@@ -43,8 +43,12 @@ public:
   [[nodiscard]] const Vec3f& getReflectiveColor() const { return reflectiveColor; }
   [[nodiscard]] const Vec3f& getEmittedColor() const { return emittedColor; }  
   [[nodiscard]] float getRoughness() const { return roughness; } 
-  [[nodiscard]] bool hasTextureMap() const { return textureFile != ""; } 
-  //GLuint getTextureID();
+  [[nodiscard]] bool hasTextureMap() const { return textureFile != ""; }
+  [[nodiscard]] bool isEmitting(double x = .001) const {
+    return getEmittedColor().Length() > x;
+  }
+
+  Vec3f brdf(const Hit &hit, const Vec3f &in, const Vec3f &out) const;
 
   // SHADE
   // compute the contribution to local illumination at this point for

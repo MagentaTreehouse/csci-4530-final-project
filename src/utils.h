@@ -4,10 +4,6 @@
 #include "vectors.h"
 #include "argparser.h"
 
-// ======================================================================
-
-#define square(x) ((x)*(x))
-
 // needed by Windows
 // allows us to use std::min & std::max
 #ifndef NOMINMAX

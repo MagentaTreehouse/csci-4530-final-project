@@ -1,7 +1,7 @@
 material
 diffuse 0 0 0
 reflective 0 0 0
-emitted 24 24 24
+emitted 64 64 64
 
 material
 diffuse 0.95 0.95 0.95

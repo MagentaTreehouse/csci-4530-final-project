@@ -41,10 +41,10 @@ public:
   template<bool Visualize = false> Vec3f TraceRay(const Ray &, Hit &, int depth = 0) const;
 
 private:
+  template<class F, bool Visualize> Vec3f shade(const Ray &, Hit &,
+    const Material &m, int depth, F directIllum, std::bool_constant<Visualize>) const;
   template<class F, bool Visualize> Vec3f TraceRayImpl(const Ray &, Hit &,
-    const Vec3f &ambientLt, int depth, F directIllum, std::bool_constant<Visualize>) const;
-  void drawVBOs_a();
-  void drawVBOs_b();
+    int depth, F directIllum, std::bool_constant<Visualize>) const;
 
   // REPRESENTATION
   Mesh *mesh;
