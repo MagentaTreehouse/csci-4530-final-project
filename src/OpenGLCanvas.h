@@ -23,7 +23,7 @@ class OpenGLRenderer;
 class OpenGLCanvas {
 
 public:
-  static constexpr auto windowTitle{"ACG HW3 RENDERING"};
+  static constexpr auto windowTitle{"ACG Final Project Renderer"};
 
   // various static variables
   static ArgParser *args;
