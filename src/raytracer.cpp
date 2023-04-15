@@ -67,44 +67,6 @@ Vec3f HemisphereRandom(std::tuple<float, float> unitSqrPt, Vec3f normal) {
 }
 
 
-Vec3f HemisphereRandom_legacy(Vec3f normal) {
-    float phi = ArgParser::rand() * 2 * M_PI;
-    float theta = ArgParser::rand() * M_PI / 2;
-    float x = normal.x();
-    float y = normal.y();
-    float z = normal.z();
-    float phi2;
-    float theta2;
-    theta2 = acos(z);
-    if (fabs(x) < EPSILON) {
-        if (y == 0) {
-            phi2 = 0;
-        }
-        else if (y > 0) {
-            phi2 = M_PI / 2;
-        }
-        else {
-            phi2 = -M_PI / 2;
-        }
-    }
-    else {
-        phi2 = atan(y / x);
-    }
-    phi == phi2;
-    theta += theta2;
-    Vec3f dir = Vec3f(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
-
-    /*
-    float t[16] = { (y / sqrt(x * x + y * y)),  -x / sqrt(x * x + y * y),       0,                  0,
-                    x * z / sqrt(x * x + y * y), y * z / sqrt(x * x + y * y), -sqrt(x * x + y * y), 0,
-                    x,                              y,                          z,                  1 };
-    Matrix transform = Matrix(t);
-
-    return transform * dir;*/
-    return dir;
-}
-
-
 template<class F, bool Visualize>
 Vec3f RayTracer::shade(const Ray &ray, Hit &hit, const Material &m, int depth, F directIllum, std::bool_constant<Visualize>) const {
   const Vec3f &d{ray.getDirection()};
