@@ -105,18 +105,18 @@ Vec3f HemisphereRandom_legacy(Vec3f normal) {
 }
 
 //random hemisphere sampling but with weighted direction
-Vec3f HemisphereRandom_weight(Vec3f normal, Vec3f dir, float weight) {
+Vec3f HemisphereRandom_weight(std::tuple<float, float> unitSqrPt, Vec3f normal, Vec3f dir, float weight, float spreadAngle = M_PI / 12) {
     float prob = ArgParser::rand();
     if (prob > weight) {
-        return HemisphereRandom_legacy(normal);
+        return HemisphereRandom(unitSqrPt, normal);
     }
     else {
         bool find = false;
         Vec3f temp;
         while (!find) {
-            temp = HemisphereRandom_legacy(normal);
+            temp = HemisphereRandom(unitSqrPt, normal);
             float cosine = temp.Dot3(normal);
-            if (cosine > cosf(M_PI / 12)) {
+            if (cosine > cosf(spreadAngle)) {
                 find = true;
             }
         }
