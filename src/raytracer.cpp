@@ -51,7 +51,7 @@ Vec3f HemisphereRandom(std::tuple<float, float> unitSqrPt, Vec3f normal) {
   float r{std::sqrt(1.f - px * px)};
   float phi = 2 * M_PI * py;
   Vec3f dir{r * std::cos(phi), r * std::sin(phi), px};
-  if (std::abs(normal.z() - 1) < EPSILON)
+  if (std::fabs(normal.z() - 1) < EPSILON)
     return dir;
   float x = normal.x();
   float y = normal.y();
@@ -63,7 +63,8 @@ Vec3f HemisphereRandom(std::tuple<float, float> unitSqrPt, Vec3f normal) {
     x,            y,            z,      0,
     0,            0,            0,      1
   };
-  return Matrix{t} * dir;
+  
+  return (Matrix{t} * dir).Normalized();
 }
 
 
@@ -73,53 +74,54 @@ Vec3f HemisphereRandom_legacy(Vec3f normal) {
     float x = normal.x();
     float y = normal.y();
     float z = normal.z();
-    float phi2;
-    float theta2;
-    theta2 = acos(z);
-    if (fabs(x) < EPSILON) {
-        if (y == 0) {
-            phi2 = 0;
-        }
-        else if (y > 0) {
-            phi2 = M_PI / 2;
-        }
-        else {
-            phi2 = -M_PI / 2;
-        }
-    }
-    else {
-        phi2 = atan(y / x);
-    }
-    phi == phi2;
-    theta += theta2;
     Vec3f dir = Vec3f(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
+    if (std::fabs(z - 1) < EPSILON)
+        return dir;
 
-    /*
+    
     float t[16] = { (y / sqrt(x * x + y * y)),  -x / sqrt(x * x + y * y),       0,                  0,
                     x * z / sqrt(x * x + y * y), y * z / sqrt(x * x + y * y), -sqrt(x * x + y * y), 0,
-                    x,                              y,                          z,                  1 };
+                    x,                              y,                          z,                  0,
+                    0,                              0,                          0,                  1};
     Matrix transform = Matrix(t);
 
-    return transform * dir;*/
-    return dir;
+    return (Matrix{t} * dir).Normalized();
+    //return dir;
+}
+
+//hemisphere sampling with focus on the top center cone of the hemisphere,
+//so it is a cone sampling
+Vec3f ConeRandom(Vec3f normal, float maxTheta) {
+    float phi = ArgParser::rand() * 2 * M_PI;
+    float theta = ArgParser::rand() * maxTheta;
+    float x = normal.x();
+    float y = normal.y();
+    float z = normal.z();
+    Vec3f dir = Vec3f(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
+    if (std::fabs(z - 1) < EPSILON)
+        return dir;
+
+
+    float t[16] = { (y / sqrt(x * x + y * y)),  -x / sqrt(x * x + y * y),       0,                  0,
+                    x * z / sqrt(x * x + y * y), y * z / sqrt(x * x + y * y), -sqrt(x * x + y * y), 0,
+                    x,                              y,                          z,                  0,
+                    0,                              0,                          0,                  1 };
+    Matrix transform = Matrix(t);
+
+    return (Matrix{ t } *dir).Normalized();
+
 }
 
 //random hemisphere sampling but with weighted direction
-Vec3f HemisphereRandom_weight(std::tuple<float, float> unitSqrPt, Vec3f normal, Vec3f dir, float weight, float spreadAngle = M_PI / 12) {
+Vec3f HemisphereRandom_weight(std::tuple<float, float> unitSqrPt, Vec3f normal, Vec3f dir, float weight, float spreadAngle) {
     float prob = ArgParser::rand();
     if (prob > weight) {
         return HemisphereRandom(unitSqrPt, normal);
     }
     else {
         bool find = false;
-        Vec3f temp;
-        while (!find) {
-            temp = HemisphereRandom(unitSqrPt, normal);
-            float cosine = temp.Dot3(normal);
-            if (cosine > cosf(spreadAngle)) {
-                find = true;
-            }
-        }
+        Vec3f temp = ConeRandom(dir, spreadAngle);
+        return temp;
     }
 }
 
@@ -161,7 +163,9 @@ Vec3f RayTracer::shade(const Ray &ray, Hit &hit, const Material &m, int depth, F
 
   // add contribution from reflection, if the surface is shiny
   if (m.getReflectiveColor() != Vec3f{} && depth) {
-    const Ray r{point, Reflection(d, normal)};
+    
+    const Ray r{ point, HemisphereRandom_weight({static_cast<float>(ArgParser::rand()), static_cast<float>(ArgParser::rand())}, normal, Reflection(d,normal), 0.5 , M_PI/12) };
+    //const Ray r{point, Reflection(d, normal)};
     Hit h{};
     answer +=
       m.getReflectiveColor() *
@@ -257,7 +261,9 @@ Vec3f RayTracer::renderPixel(double i, double j) const {
   Vec3f sum{};
   for (std::size_t si{}; si < aa; ++si)
     for (std::size_t sj{}; sj < aa; ++sj) {
-      const auto [x, y]{ToUnitSquare({i0 + ds * si, j0 + ds * sj})};
+      //const auto [x, y]{ToUnitSquare({i0 + ds * si, j0 + ds * sj})};c
+      const auto [x, y] {ToUnitSquare({ i0, j0 })};
+
       const Ray r = args->mesh->camera->generateRay(x,y);
       Hit hit;
       sum += TraceRay<Visualize>(r, hit, md.num_bounces);
