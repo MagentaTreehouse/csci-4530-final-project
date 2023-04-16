@@ -1,7 +1,7 @@
 material
 diffuse 0.8 0.8 0.8
 reflective 0 0 0
-emitted 1.27 1.27 1.27
+emitted 3.9 3.9 3.9
 
 material
 diffuse 0.84 0.84 0.84

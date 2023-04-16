@@ -98,13 +98,14 @@ Vec3f RayTracer::shade(const Ray &ray, Hit &hit, const Material &m, int depth, F
     if constexpr (Visualize) RayTree::AddReflectedSegment(r, 0, h.getT());
     Vec3f ptLtSample{r.pointAtParameter(h.getT()) - point};
     const float cosTheta = ptLtSample.Dot3(normal) / ptLtSample.Length();
-    answer += cosTheta * 2 * M_PI *
+    answer +=
+      cosTheta * 2 * M_PI *
       shade<F, Visualize>(r, h, *h.getMaterial(), depth - 1, directIllum, {}) *
-      diffuse_color * m.brdf(hit, d, ptLtSample);
+      m.brdf(hit, d, ptLtSample);
   }
 
-  // add contribution from reflection, if the surface is shiny
-  if (m.getReflectiveColor() != Vec3f{} && depth) {
+  // mirror reflection
+  if (m.getRoughness() == 0) {
     const Ray r{point, Reflection(d, normal)};
     Hit h{};
     answer +=

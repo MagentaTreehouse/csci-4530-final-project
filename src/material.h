@@ -34,7 +34,7 @@ public:
     // need to initialize texture_id after glut has started
     //texture_id = 0;
   }
-  
+
   ~Material();
 
   // ACCESSORS
@@ -48,6 +48,7 @@ public:
     return getEmittedColor().Length() > x;
   }
 
+  // in should be normalized, out does not have to be
   Vec3f brdf(const Hit &hit, const Vec3f &in, const Vec3f &out) const;
 
   // SHADE

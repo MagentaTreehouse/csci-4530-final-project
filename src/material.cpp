@@ -101,9 +101,19 @@ void Material::ComputeAverageTextureColor() {
   diffuseColor = {r,g,b};
 }
 
-Vec3f Material::brdf(const Hit &hit, const Vec3f &, const Vec3f &) const {
-  // currently only diffuse
-  return .5 / M_PI * getDiffuseColor(hit.get_s(),hit.get_t());
+Vec3f Material::brdf(const Hit &hit, const Vec3f &in, const Vec3f &out) const {
+  Vec3f answer{.5 / M_PI * getDiffuseColor(hit.get_s(), hit.get_t())};
+  if (getReflectiveColor() == Vec3f{} || getRoughness() == 0)
+    return answer;
+  const double p{std::pow(1 / getRoughness() - 1, 2)};
+  const auto glossyBias{std::pow(std::cos(
+    std::acos(Reflection(in, hit.getNormal()).Dot3(out.Normalized())) / 2
+  ), p)};
+  // normalization = pi / (sqrt(pi) * ...)
+  // 1 / (2pi) * glossyBias * normalization * reflectiveColor
+  // cancel out the pi's
+  const auto normalization = 1 / (std::sqrt(M_PI) * std::tgamma((p + 1) / 2) / (2 * std::tgamma(p / 2 + 1)));
+  return answer + .5 * glossyBias * normalization * getReflectiveColor();
 }
 
 // ==================================================================

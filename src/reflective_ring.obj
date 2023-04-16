@@ -1,7 +1,7 @@
 material
 diffuse 0 0 0
 reflective 0 0 0
-emitted 30 30 30
+emitted 192 192 192
 
 material
 texture_file wood.ppm

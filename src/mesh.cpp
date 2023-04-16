@@ -180,7 +180,7 @@ void Mesh::Load(ArgParser *_args) {
   std::string token;
   Material *active_material{};
   camera = nullptr;
-  background_color = {1,1,1};
+  background_color = {};
 
   while (objfile >> token) {
     if (token == "v") {
