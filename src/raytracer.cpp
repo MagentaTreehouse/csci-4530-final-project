@@ -104,6 +104,24 @@ Vec3f HemisphereRandom_legacy(Vec3f normal) {
     return dir;
 }
 
+//random hemisphere sampling but with weighted direction
+Vec3f HemisphereRandom_weight(Vec3f normal, Vec3f dir, float weight) {
+    float prob = ArgParser::rand();
+    if (prob > weight) {
+        return HemisphereRandom_legacy(normal);
+    }
+    else {
+        bool find = false;
+        Vec3f temp;
+        while (!find) {
+            temp = HemisphereRandom_legacy(normal);
+            float cosine = temp.Dot3(normal);
+            if (cosine > cosf(M_PI / 12)) {
+                find = true;
+            }
+        }
+    }
+}
 
 template<class F, bool Visualize>
 Vec3f RayTracer::shade(const Ray &ray, Hit &hit, const Material &m, int depth, F directIllum, std::bool_constant<Visualize>) const {
