@@ -100,7 +100,7 @@ Vec3f RayTracer::shade(const Ray &ray, Hit &hit, const Material &m, int depth, F
     const float cosTheta = ptLtSample.Dot3(normal) / ptLtSample.Length();
     answer +=
       cosTheta * 2 * M_PI *
-      shade<F, Visualize>(r, h, *h.getMaterial(), depth - 1, directIllum, {}) *
+      shade<F, Visualize>(r, h, *h.getMaterial(), depth - 1, directIllum) *
       m.brdf(hit, d, ptLtSample);
   }
 
@@ -110,7 +110,7 @@ Vec3f RayTracer::shade(const Ray &ray, Hit &hit, const Material &m, int depth, F
     Hit h{};
     answer +=
       m.getReflectiveColor() *
-      TraceRayImpl<F, Visualize>(r, h, depth - 1, directIllum, {});
+      TraceRayImpl<F, Visualize>(r, h, depth - 1, directIllum);
     if constexpr (Visualize) RayTree::AddReflectedSegment(r, 0, h.getT());
   }
 
@@ -135,7 +135,7 @@ Vec3f RayTracer::TraceRayImpl(const Ray &ray, Hit &hit, int depth, F directIllum
   assert (m != nullptr);
   if (m->isEmitting())
     return m->getEmittedColor();
-  return shade<F, Visualize>(ray, hit, *m, depth, directIllum, {});
+  return shade<F, Visualize>(ray, hit, *m, depth, directIllum);
 }
 
 
@@ -151,7 +151,7 @@ Vec3f RayTracer::TraceRay(const Ray &ray, Hit &hit, int depth) const {
     return block.getT() > 1 - EPSILON? shadeLocal(r.getDirection()) : Vec3f{};
   }};
 
-  std::bool_constant<Visualize> vis{};
+  std::bool_constant<Visualize> vis;
   // The behavior of direct illumination calculation differs for certain values of shadow
   // samples and antialiasing samples
   switch (int sSamp{md.num_shadow_samples}; sSamp * md.num_antialias_samples) {

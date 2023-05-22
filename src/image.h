@@ -2,6 +2,7 @@
 #define _IMAGE_H_
 
 #include <cassert>
+#include <cstdint>
 #include <string_view>
 
 // ====================================================================
